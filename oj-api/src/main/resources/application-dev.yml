@@ -3,4 +3,4 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:47.109.206.82/lanqiao_oj?useUnicode=true&characterEncoding=utf-8&useSSL=true
     username: root
-    password: 123456
+    password: 20010720Lmx
