@@ -24,9 +24,8 @@ import org.springframework.web.multipart.MultipartFile;
  * 系统用户 控制层。
  *
  * @author zhang.rx
- * @since 2024/2/18
+ * @since 2024/2/18@RestController
  */
-@RestController
 @Tag(name = "SysUser", description = "系统用户管理接口")
 @RequestMapping("/sys/sysUser")
 public class SysUserController {
@@ -42,7 +41,7 @@ public class SysUserController {
 	@PostMapping("/upload/avatar")
 	@Operation(summary = "上传头像")
 	public Result<String> upload(@RequestParam("file") MultipartFile file) {
-		return null;
+		return Result.success(sysUserService.uploadAvatar(file));
 	}
 
 	/**
@@ -53,7 +52,7 @@ public class SysUserController {
 	@PutMapping("/update")
 	@Operation(summary = "修改用户信息--用户使用")
 	public Result<Boolean> updateUserInfo(@RequestBody SysUserUpdateRequest request) {
-		return null;
+		return Result.success(sysUserService.update(request));
 	}
 
 	/**
@@ -65,8 +64,10 @@ public class SysUserController {
 	@Operation(summary = "禁用用户")
 	@SaCheckRole(AuthConst.SUPER_ADMIN)
 	public Result<String> disable(@PathVariable @Parameter(description = "主键") String id) {
-
-		return null;
+		if (!sysUserService.disable(id)) {
+			throw new BusinessException("禁用失败");
+		}
+		return Result.ok();
 	}
 
 	/**
@@ -78,7 +79,10 @@ public class SysUserController {
 	@Operation(summary = "启用用户")
 	@SaCheckRole(AuthConst.SUPER_ADMIN)
 	public Result<Boolean> enable(@PathVariable @Parameter(description = "主键") String id) {
-		return null;
+		if (!sysUserService.enable(id)) {
+			throw new BusinessException("启用失败");
+		}
+		return Result.ok();
 	}
 
 	/**
@@ -88,7 +92,7 @@ public class SysUserController {
 	@GetMapping("/getInfo")
 	@Operation(summary = "获取已登录的当前用户信息--用户使用")
 	public Result<SysUserResponse> getInfo() {
-		return null;
+		return Result.success(sysUserService.getInfo());
 	}
 
 	/**
@@ -98,7 +102,7 @@ public class SysUserController {
 	@GetMapping("/getInfoById/{id}")
 	@Operation(summary = "根据主键获取系统用户信息--用户使用")
 	public Result<SysUserSimpleResponse> getInfoById(@PathVariable("id") String userId) {
-		return null;
+		return Result.success(sysUserService.getInfoById(userId));
 	}
 
 	/**
@@ -111,7 +115,7 @@ public class SysUserController {
 	@SaCheckRole(value = { AuthConst.SUPER_ADMIN, AuthConst.ADMIN }, mode = SaMode.OR)
 	public Result<Page<SysUserResponse>> page(@Parameter(description = "分页条件") Paging page,
 			@Parameter(description = "查询条件") SysUserRequest request) {
-		return null;
+		return Result.success(sysUserService.page(page, request));
 	}
 
 	/**
@@ -122,7 +126,7 @@ public class SysUserController {
 	@Operation(summary = "根据主键获取系统用户详细信息--admin使用")
 	@SaCheckRole(AuthConst.SUPER_ADMIN)
 	public Result<SysUser> infoById(String id) {
-		return null;
+		return Result.success(sysUserService.getById(id));
 	}
 
 	/**
@@ -132,7 +136,7 @@ public class SysUserController {
 	@Operation(summary = "强制踢人下线")
 	@SaCheckRole(AuthConst.SUPER_ADMIN)
 	public Result<Boolean> kick(@PathVariable @Parameter(description = "主键") Long id) {
-		return null;
+		return Result.success(sysUserService.kick(id));
 	}
 
 }

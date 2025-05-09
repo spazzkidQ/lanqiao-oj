@@ -1,4 +1,4 @@
-package com.zrx.security.controller;
+package com.zrx.security.security.controller;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.zrx.exception.BusinessException;
@@ -42,9 +42,9 @@ public class LoginController {
 
 	@GetMapping("/captcha")
 	@Operation(summary = "获取验证码", description = "获取验证码",
-			responses = { @ApiResponse(description = "成功返回验证码图片",
+			responses = {@ApiResponse(description = "成功返回验证码图片",
 					content = @Content(mediaType = MediaType.APPLICATION_OCTET_STREAM_VALUE,
-							schema = @Schema(type = "string", format = "binary"))) })
+							schema = @Schema(type = "string", format = "binary")))})
 	public void captcha(HttpServletResponse response, String uuid) throws IOException {
 		// uuid不能为空
 		if (StringUtils.isBlank(uuid)) {
@@ -72,5 +72,4 @@ public class LoginController {
 		StpUtil.logout();
 		return Result.ok();
 	}
-
 }

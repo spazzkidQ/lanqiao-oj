@@ -21,7 +21,18 @@ public interface SysRoleService extends IService<SysRole> {
 
 	List<String> getRoleIdListByUserId(String userId);
 
+	List<SysRoleResponse> listRole();
 
 	List<String> getRoleListByUserId(String userId);
+
+	Page<SysRoleResponse> page(Paging page, SysRoleRequest sysRole);
+
+	Boolean updateById(SysRoleRequest req);
+
+	Boolean save(SysRoleRequest req);
+
+	Boolean updateUserRole(UpdateUserRoleRequest req);
+
+	Boolean removeRoleById(Serializable id);
 
 }

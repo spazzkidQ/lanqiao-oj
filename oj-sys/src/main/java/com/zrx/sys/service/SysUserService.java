@@ -23,10 +23,24 @@ public interface SysUserService extends IService<SysUser> {
 
 	SysUser getByUsername(String username);
 
+	Boolean update(SysUserUpdateRequest request);
 
 	LoginResponse login(LoginRequest loginRequest);
 
+	String register(RegisterRequest registerRequest);
 
+	Boolean disable(String id);
 
+	Boolean enable(String id);
+
+	SysUserResponse getInfo();
+
+	SysUserSimpleResponse getInfoById(String userId);
+
+	Page<SysUserResponse> page(Paging page, SysUserRequest request);
+
+	String uploadAvatar(MultipartFile file);
+
+	Boolean kick(Long id);
 
 }
