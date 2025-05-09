@@ -1,0 +1,62 @@
+server:
+  port: 8101
+  servlet:
+    context-path: /api
+    session:
+      cookie:
+        http-only: true
+spring:
+  # 默认dev环境
+  profiles:
+    active: dev
+    include:
+      - security
+  # 支持swagger3
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+
+# mybatis-flex 配置
+mybatis-flex:
+  mapper-locations:
+    - classpath:mapper/*.xml
+  configuration:
+    call-setters-on-nulls: true
+    return-instance-for-empty-row: true
+    # SQL 日志打印
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# springdoc相关配置
+springdoc:
+  swagger-ui:
+    # 自定义swagger前端请求路径，输入http：127.0.0.1:8080/swagger-ui.html会自动重定向到swagger页面
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs    # swagger后端请求地址
+    enabled: true   # 是否开启文档功能
+  group-configs:
+    - group: '核心接口'
+      paths-to-match: '/**'
+      packages-to-scan: com.zrx
+    - group: '系统接口'
+      paths-to-match:
+        - '/sys/**'
+        - '/security/**'
+      packages-to-scan: com.zrx
+
+# knife4j相关配置 可以不用改
+knife4j:
+  enable: true    # 开启knife4j，无需添加@EnableKnife4j注解
+  setting:
+    language: zh_cn   # 中文
+    swagger-model-name: 实体类   # 重命名SwaggerModel名称,默认
+    # 为了添加 basePath
+    enable-host: true
+    enable-host-text: "localhost:8101"
+
+codesandbox:
+   type: remote
+  # 改为local后就是访问本地沙箱
+#  type: local
