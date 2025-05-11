@@ -1,6 +1,6 @@
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:47.109.206.82/lanqiao_oj?useUnicode=true&characterEncoding=utf-8&useSSL=true
+    url: jdbc:mysql://47.109.206.82/lanqiao_oj?useUnicode=true&characterEncoding=utf-8&useSSL=true
     username: root
     password: 20010720Lmx

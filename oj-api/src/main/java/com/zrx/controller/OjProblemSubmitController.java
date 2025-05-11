@@ -19,6 +19,4 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "OjProblemSubmit", description = "题目提交管理")
 @RequestMapping("/submit")
 public class OjProblemSubmitController {
-
-
 }

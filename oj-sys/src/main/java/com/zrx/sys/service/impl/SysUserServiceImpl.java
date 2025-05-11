@@ -104,14 +104,12 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 	@Override
 	public LoginResponse login(LoginRequest loginRequest) {
 		// 验证码是否正确
-
 		boolean flag = captchaService.validate(loginRequest.getUuid(), loginRequest.getCaptcha());
 		if (!flag) {
 			throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "验证码错误");
 		}
 		// 用户信息
 		SysUser user = getByUsername(loginRequest.getUsername());
-
 		// 用户不存在
 		if (user == null) {
 			throw new BusinessException(ResultCode.FAIL.getCode(), "用户不存在");

@@ -24,8 +24,9 @@ import org.springframework.web.multipart.MultipartFile;
  * 系统用户 控制层。
  *
  * @author zhang.rx
- * @since 2024/2/18@RestController
+ * @since 2024/2/18
  */
+@RestController
 @Tag(name = "SysUser", description = "系统用户管理接口")
 @RequestMapping("/sys/sysUser")
 public class SysUserController {
