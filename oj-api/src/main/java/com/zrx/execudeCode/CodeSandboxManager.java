@@ -8,10 +8,10 @@ public class CodeSandboxManager {
 
 	public static CodeSandBox instance(String type) {
 		if (type.equals("remote")) {
-			return new RemoteCodeSandbox();
+			return new RemoteCodeSandbox();  // 远程调用;
 		}
 		else if (type.equals("local")) {
-			return new LocalCodeSandbox();
+			return new LocalCodeSandbox();  // 本地调用的接口;
 		}
 		else {
 			return new RemoteCodeSandbox();

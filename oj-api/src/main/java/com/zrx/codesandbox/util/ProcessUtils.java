@@ -13,10 +13,11 @@ public class ProcessUtils {
 		BufferedReader errorBufferedReader = null;
 		InputStream errorInputStream = null;
 		try {
-			int exitValue = 0;
-			inputStream = compileProcess.getInputStream();
-			exitValue = compileProcess.waitFor();
-			executeMessage.setExitValue(exitValue);
+			int exitValue = 0;   // 执行我们的数值;
+			inputStream = compileProcess.getInputStream();   // 读取该进程在控制台打印的正常输出信息
+			exitValue = compileProcess.waitFor();   // 退出状态值（exit value） 用于判断进程是否成功执行 0表示成功的执行了该进程;
+			// 非0：表示失败（如编译错误、命令不存在等）
+			executeMessage.setExitValue(exitValue);   // 设置我们执行的结果;
 			if (exitValue == 0) {
 				StringBuilder compileResultStr = new StringBuilder("");
 				bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
@@ -25,8 +26,11 @@ public class ProcessUtils {
 					compileResultStr.append(compileOutputLine).append("\n");
 				}
 				executeMessage.setMessage(compileResultStr.toString());
+				// 读取我们执行成功后的数据信息;
 			}
 			else {
+
+				// 读取失败后的信息;
 				StringBuilder compileResultStr = new StringBuilder("");
 				bufferedReader = new BufferedReader(new InputStreamReader(compileProcess.getInputStream(), "GBK"));
 				String compileOutputLine;
@@ -34,6 +38,8 @@ public class ProcessUtils {
 					compileResultStr.append(compileOutputLine).append("\n");
 				}
 				executeMessage.setMessage(compileResultStr.toString());
+
+				// 跟成功的时候一样的;读取我们需要失败的信息消息;
 				errorInputStream = compileProcess.getErrorStream();
 				StringBuilder compileErrorResultStr = new StringBuilder("");
 				errorBufferedReader = new BufferedReader(new InputStreamReader(errorInputStream));
@@ -42,6 +48,7 @@ public class ProcessUtils {
 					compileErrorResultStr.append(errorCompileOutputLine).append("\n");
 				}
 				executeMessage.setErrorMessage(compileErrorResultStr.toString());
+				// 重复我们的的过程;读取我们错误的信息;
 			}
 		}
 		catch (Exception e) {
@@ -64,6 +71,10 @@ public class ProcessUtils {
 			compileProcess.destroy();
 		}
 		return executeMessage;
+
+		/*
+		* 最后的结尾处理;
+		* */
 	}
 
 	public static ExecuteMessage runCode(Process runProcess, String args) {
@@ -72,16 +83,15 @@ public class ProcessUtils {
 		OutputStreamWriter outputStreamWriter = null;
 		InputStream inputStream = null;
 		BufferedReader bufferedReader = null;
-
 		InputStream errorInputStream = null;
 		BufferedReader errorBufferedReader = null;
 		try {
 			if (args != null) {
 				inputArgs(runProcess, args, outputStream, outputStreamWriter);
 			}
-			setTime(executeMessage, runProcess);
+			setTime(executeMessage, runProcess);    //设置我们执行的时间;
 			setRunResult(runProcess, executeMessage, inputStream, bufferedReader, errorInputStream,
-					errorBufferedReader);
+					errorBufferedReader);   // 设置我们成功的信息和我们错误的信息;记录到我们的ExecuteMessage里面;
 		}
 		catch (Exception e) {
 			System.out.println(e.getMessage());
@@ -120,7 +130,7 @@ public class ProcessUtils {
 		long end = 0L;
 		if (process.isAlive()) {
 			start = System.currentTimeMillis();
-			process.waitFor();
+			process.waitFor();   // 阻塞的等待;
 			end = System.currentTimeMillis();
 		}
 		executeMessage.setTime((end - start));

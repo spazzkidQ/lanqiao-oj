@@ -9,14 +9,10 @@ import lombok.Data;
 @Data
 public class ExecuteMessage {
 
-	private Integer exitValue;
-
-	private String message;
-
-	private String errorMessage;
-
-	private Long time;
-
-	private Long memory;
+    private Integer exitValue;   //执行的值;
+    private String message;   // 执行的消息;
+    private String errorMessage; // 执行错误的信息;
+    private Long time;   // 时间;
+    private Long memory;  // 内存;
 
 }

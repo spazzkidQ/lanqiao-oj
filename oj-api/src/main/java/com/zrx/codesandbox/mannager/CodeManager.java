@@ -10,7 +10,7 @@ import com.zrx.codesandbox.impl.docker.PythonDockerCodeSandbox;
 public class CodeManager {
 
 	public static CodeSandBox getCodeSandbox(String language) {
-		QuestionSubmitLanguageEnum enumByValue = QuestionSubmitLanguageEnum.getEnumByValue(language);
+		QuestionSubmitLanguageEnum enumByValue = QuestionSubmitLanguageEnum.getEnumByValue(language);   // 获取当前所处于的语言;
 		switch (enumByValue) {
 			case JAVA:
 				return new JavaDockerCodeSandbox();
@@ -24,5 +24,4 @@ public class CodeManager {
 				return new JavaDockerCodeSandbox();
 		}
 	}
-
 }

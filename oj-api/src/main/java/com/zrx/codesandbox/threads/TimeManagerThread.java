@@ -17,7 +17,6 @@ public class TimeManagerThread extends Thread {
 	public void run() {
 		try {
 			Thread.sleep(time);
-
 		}
 		catch (InterruptedException e) {
 			throw new RuntimeException(e);

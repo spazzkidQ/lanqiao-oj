@@ -11,12 +11,12 @@ import java.util.List;
 @ToString
 public class ExecuteCodeResponse {
 
-	private List<String> ouputList;
+	private List<String> ouputList;   // 输出的答案;
 
-	private String message;
+	private String message;   // 消息;
 
-	private Integer status;
+	private Integer status;   // 判题的状态；
 
-	private JudgeInfo judgeInfo;
+	private JudgeInfo judgeInfo;   // 执行信息的大小;  时间 + 内存;
 
 }

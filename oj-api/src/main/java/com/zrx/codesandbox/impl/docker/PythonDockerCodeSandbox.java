@@ -21,7 +21,7 @@ public class PythonDockerCodeSandbox extends CodeSandboxTemplate {
 		List<String> inputList = executeCodeRequest.getInputList();
 		List<String> newInputList = new ArrayList<>();
 		for (String input : inputList) {
-			newInputList.add(input.replaceAll(" ", "\n"));
+			newInputList.add(input.replaceAll(" ", "\n")); // python里面的空格替换为我们的换行符号;
 		}
 		executeCodeRequest.setInputList(newInputList);
 		return super.executeCode(executeCodeRequest);

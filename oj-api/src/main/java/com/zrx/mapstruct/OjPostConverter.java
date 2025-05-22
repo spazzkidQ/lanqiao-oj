@@ -12,6 +12,10 @@ import org.mapstruct.Mapper;
 
 import java.util.List;
 
+/**
+ * @author zhang.rx
+ * @since 2024/5/13
+ */
 @Mapper(componentModel = "Spring")
 public interface OjPostConverter {
 
@@ -28,8 +32,8 @@ public interface OjPostConverter {
 	OjPost toEntity(OjPostAddRequest req);
 
 	OjPost toEntityUpdate(OjPostUpdateRequest req);
-	Page<OjPostVo> toVoPage(Page<OjPost> paginate);
 
+	Page<OjPostVo> toVoPage(Page<OjPost> paginate);
 
 	List<OjPostVo> toVoList(List<OjPost> ojPosts);
 

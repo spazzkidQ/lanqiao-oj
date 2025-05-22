@@ -24,7 +24,4 @@ import java.util.List;
 @Tag(name = "OjPostComment", description = "帖子评论接口")
 @RequestMapping("/oj/post/comment")
 public class OjPostCommentController {
-
-
-
-}
+    }

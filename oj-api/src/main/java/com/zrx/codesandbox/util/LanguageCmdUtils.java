@@ -30,13 +30,16 @@ public class LanguageCmdUtils {
 	private static final String C_Docker_RUN = "docker exec -i %s %s/a.exe";
 
 	public static String getCompileCMD(String userCodePath, String userCodeParent, String language) {
+		/*
+		* 格式化我们的
+		* */
 		switch (language) {
 			case "java":
 				return String.format(JAVA_COMPILE, userCodePath);
 			case "c++":
 				return String.format(C_PLUS_PLUS_COMPILE, userCodePath, userCodeParent);
 			case "python":
-				return null;
+				return null;   // python什么会执行为null呢?因为python不需要编译;
 			case "c":
 				return String.format(C_COMPILE, userCodePath, userCodeParent);
 			default:

@@ -1,14 +1,11 @@
 package com.zrx.queue;
 
 import com.rabbitmq.client.Channel;
-import com.zrx.execudeCode.JudgeService;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.support.AmqpHeaders;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.Header;
-import org.springframework.stereotype.Component;
 
 //@Component
 @Slf4j
