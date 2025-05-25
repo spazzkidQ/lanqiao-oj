@@ -1,8 +1,7 @@
 package com.zrx.controller;
 
 import cn.dev33.satoken.annotation.SaCheckRole;
-import com.alibaba.excel.EasyExcelFactory;
-import com.alibaba.excel.support.ExcelTypeEnum;
+import com.alibaba.excel.EasyExcel;
 import com.mybatisflex.core.paginate.Page;
 import com.zrx.model.common.Paging;
 import com.zrx.model.common.SaveGroup;
@@ -10,10 +9,10 @@ import com.zrx.model.common.UpdateGroup;
 import com.zrx.model.dto.problem.OjProblemAddRequest;
 import com.zrx.model.dto.problem.OjProblemQueryRequest;
 import com.zrx.model.dto.problem.OjProblemUpdateRequest;
+import com.zrx.model.entity.OjProblem;
 import com.zrx.model.vo.OjProblemPageVo;
 import com.zrx.model.vo.OjProblemVo;
 import com.zrx.reuslt.Result;
-import com.zrx.reuslt.ResultCode;
 import com.zrx.security.satoken.AuthConst;
 import com.zrx.service.OjProblemService;
 import com.zrx.utils.ExcelUtil;
@@ -27,6 +26,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.io.Serializable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 题目 控制层。
@@ -38,6 +39,8 @@ import java.io.Serializable;
 @Tag(name = "OjProblem", description = "题目管理")
 @RequestMapping("/ojProblem")
 public class OjProblemController {
+
+	private static final Logger log = LoggerFactory.getLogger(OjProblemController.class);
 
 	@Resource
 	private OjProblemService ojProblemService;
@@ -51,7 +54,10 @@ public class OjProblemController {
 	@Operation(summary = "保存题目")
 	@SaCheckRole(AuthConst.SUPER_ADMIN)
 	public Result<Boolean> save(@Validated({ SaveGroup.class }) @RequestBody @Parameter OjProblemAddRequest req) {
-		return null;
+		// 调用服务层保存题目
+		boolean success = ojProblemService.saveProblem(req);
+		// 返回结果
+		return success ? Result.success(true) : Result.success(false);
 	}
 
 	/**
@@ -92,27 +98,43 @@ public class OjProblemController {
 
 	/**
 	 * 分页查询题目。
-	 * @param page 分页对象
+	 * @param paging 分页对象
+	 * @param req 查询条件
 	 * @return 分页对象
 	 */
 	@GetMapping("/page")
 	@Operation(summary = "分页查询题目")
-	public Result<Page<OjProblemPageVo>> page(@Parameter(description = "分页信息") Paging page,
-			@Parameter(description = "查询条件") OjProblemQueryRequest req) {
-		return null;
+	public Result<Page<OjProblemPageVo>> page(@Parameter(description = "分页信息") Paging paging,
+											  @Parameter(description = "查询条件") OjProblemQueryRequest req) {
+		// 将 Paging 转换为 Page<OjProblem>
+		Page<OjProblem> page = new Page<>(paging.getPageNum(), paging.getPageSize());
+		Page<OjProblemPageVo> result = ojProblemService.page(page, req);
+		return Result.success(result);
 	}
 
 	/**
 	 * 导出题目信息
-	 * @param req 请求信息
+	 *
+	 * @param page     分页信息
+	 * @param req      请求信息
 	 * @param response 响应
 	 * @throws IOException 异常
 	 */
 	@GetMapping("/export")
 	@Operation(summary = "导出题目信息")
 	public void export(@Parameter(description = "分页信息") Paging page,
-			@Parameter(description = "查询条件") OjProblemQueryRequest req, HttpServletResponse response)
+					   @Parameter(description = "查询条件") OjProblemQueryRequest req, HttpServletResponse response)
 			throws IOException {
-	}
+		// 设置响应头
+		ExcelUtil.setExcelResponseProp(response, "题目列表");
 
+		// 查询所有数据（不分页）
+		Page<OjProblem> problemPage = new Page<>(1, Integer.MAX_VALUE);
+		Page<OjProblemPageVo> result = ojProblemService.page(problemPage, req);
+
+		// 导出数据
+		EasyExcel.write(response.getOutputStream(), OjProblemPageVo.class)
+				.sheet("题目列表")
+				.doWrite(result.getRecords());
+	}
 }
