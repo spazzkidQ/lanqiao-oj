@@ -29,5 +29,24 @@ import java.util.List;
 @RequestMapping("/oj/post")
 public class OjPostController {
 
+    @Resource
+    private OjPostService ojPostService;
 
+    //帖子首页 屈 分页条件查询
+    @PostMapping("/page")
+    @Operation(summary = "分页查询帖子")
+    public Result<Page<OjPostVo>> page(@Parameter(description = "分页信息") Paging page,
+                                       @RequestBody OjPostQueryRequest req) {
+        return Result.success(ojPostService.getList(page, req, false));
+    }
+
+    /**
+     * 帖子首页 屈  获取五个热门帖子
+     * @return 帖子简单信息Vo
+     */
+    @GetMapping("/get/fiveHotPost")
+    @Operation(summary = "获取五个热门帖子")
+    public Result<List<OjPostSimpleVo>> getFiveHotPost() {
+        return Result.success(ojPostService.getFiveHotPost());
+    }
 }

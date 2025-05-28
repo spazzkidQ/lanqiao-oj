@@ -20,5 +20,10 @@ import java.util.List;
  */
 public interface OjPostService extends IService<OjPost> {
 
+    //帖子首页  屈
+    //分页条件查询
+    Page<OjPostVo> getList(Paging page, OjPostQueryRequest req, Boolean selfFlag);
 
+    //获取五个热力帖子
+    List<OjPostSimpleVo> getFiveHotPost();
 }
