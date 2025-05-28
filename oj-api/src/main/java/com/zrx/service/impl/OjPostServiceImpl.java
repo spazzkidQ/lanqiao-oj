@@ -1,37 +1,32 @@
 package com.zrx.service.impl;
 
-import cn.dev33.satoken.exception.NotLoginException;
 import cn.hutool.core.collection.CollUtil;
-import com.alibaba.excel.util.StringUtils;
-import com.google.common.collect.Lists;
 import com.mybatisflex.core.paginate.Page;
-import com.mybatisflex.core.query.QueryMethods;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.update.UpdateChain;
-import com.mybatisflex.core.util.StringUtil;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.zrx.enums.PostZoneEnums;
 import com.zrx.exception.BusinessException;
-import com.zrx.mapper.OjPostFavourMapper;
 import com.zrx.mapper.OjPostMapper;
-import com.zrx.mapper.OjPostThumbMapper;
-import com.zrx.mapstruct.OjPostConverter;
 import com.zrx.model.common.Paging;
-import com.zrx.model.dto.post.OjPostAddRequest;
 import com.zrx.model.dto.post.OjPostQueryRequest;
 import com.zrx.model.dto.post.OjPostUpdateRequest;
 import com.zrx.model.entity.OjPost;
-import com.zrx.model.vo.OjPostSimpleVo;
 import com.zrx.model.vo.OjPostVo;
 import com.zrx.security.utils.SecurityHelper;
 import com.zrx.service.OjPostService;
-import com.zrx.utils.PostUtil;
+import com.zrx.sys.mapper.SysUserMapper;
+import com.zrx.sys.model.entity.SysUser;
 import jakarta.annotation.Resource;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
+import static com.zrx.model.entity.table.OjPostFavourTableDef.OJ_POST_FAVOUR;
+import static com.zrx.model.entity.table.OjPostTableDef.OJ_POST;
+import static com.zrx.model.entity.table.OjPostThumbTableDef.OJ_POST_THUMB;
 
 
 /**
@@ -42,72 +37,126 @@ import java.util.List;
  */
 @Service
 public class OjPostServiceImpl extends ServiceImpl<OjPostMapper, OjPost> implements OjPostService {
-
-    @Autowired
-    private PostUtil postUtil;
     @Resource
-    private OjPostConverter postConverter;
+    private OjPostMapper ojPostMapper;
     @Resource
-    private OjPostMapper postMapper;
+    private SysUserMapper sysUserMapper;
 
-
-    //帖子首页  屈  分页条件查询
+    /**
+     * 分页查询
+     * @param page
+     * @param req
+     * @return
+     */
     @Override
-    public Page<OjPostVo> getList(Paging page, OjPostQueryRequest req, Boolean selfFlag) {
-        // 校验前端传递的分类数据
-        if (!StringUtils.isBlank(req.getZone()) && !PostZoneEnums.isValid(req.getZone())) {
-
-            // req.getZone() != null ;  // Zone("")
-            // 返回空列表表示分类无效
-            return new Page<>();
-        }
-
-        // 获取帖子列表，使用集合存储
+    public Page<OjPostVo> pageSelfOrPage(Paging page, OjPostQueryRequest req) {
+        String title = req.getTitle();
+        String zone = req.getZone();
         List<String> tags = req.getTags();
-        if (!CollUtil.isEmpty(tags)) {
-            return new Page<>();
-        }
+        // 创建QueryWrapper
         QueryWrapper queryWrapper = new QueryWrapper();
-        queryWrapper.select(
-                OjPost::getTitle,     // 帖子标题
-                OjPost::getContent,   // 帖子内容
-                OjPost::getViewNum,   // 帖子观看数
-                OjPost::getThumbNum,  // 帖子点赞数
-                OjPost::getFavourNum, // 帖子收藏数
-                OjPost::getCreator    // 关联用户头像
-        );
-
-        // 区域查询条件——标签和分区是链接在一起的，不可以单独实现
-        if (StringUtils.isNotBlank(req.getZone())) {
-            queryWrapper.eq(OjPost::getZone, req.getZone());
-        }
-
-        // 标签查询条件
+        // 使用工具类来获取当前用户信息 这里可以能缓存需要重要查询用户信息
+        SysUser user = SecurityHelper.getUser();
+        // 根据用户id查询用户信息
+        SysUser sysUser = sysUserMapper.selectOneById(user.getId());
+        // 根据条件查询
+        queryWrapper.select(OJ_POST.ALL_COLUMNS) // 查询OJ_post表中所有字段
+                .where(OJ_POST.TITLE.like(title))
+                .and(OJ_POST.ZONE.like(zone))
+                .and(OJ_POST.CREATOR.eq(user.getId())) // 创建者的id 必须与用户的id一致
+                .orderBy(OJ_POST.VIEW_NUM.desc()); // 根据观看数降序排序
+        // 使用Hutool 的工具类的判断标签是否为空，为其添加模糊查询条件
         if (CollUtil.isNotEmpty(tags)) {
-            queryWrapper.and(wrapper -> {
-                for (String tag : req.getTags()) {
-                    wrapper.like(OjPost::getTags, tag);
-                }
-            });
+            for (String tag : tags) {
+                queryWrapper.and(OJ_POST.TAGS.like("\"" + tag + "\""));
+            }
         }
-        Page<OjPost> paginate = postMapper.paginate(Page.of(page.getPageNum(), page.getPageSize()), queryWrapper);
-        Page<OjPostVo> voPage = postConverter.toVoPage(paginate);
-        postUtil.setPostAuthor(voPage.getRecords());
-        postUtil.setPostZoneName(voPage.getRecords());
-        return voPage;
+
+        // 使用page获得分页的数据
+        Page<OjPost> ojPostPage = mapper.paginate(Page.of(page.getPageNum(),page.getPageSize()),queryWrapper);
+        System.err.println(ojPostPage);
+        // 将查询出的数据 转换为VO对象
+        List<OjPostVo> collect = ojPostPage.getRecords().stream().map(post -> {
+            // 创建vo对象
+            OjPostVo ojPostVo = new OjPostVo();
+            // 设置参数
+            ojPostVo.setThumbNum(post.getThumbNum()); // 点赞数
+            ojPostVo.setFavourNum(post.getFavourNum()); // 收藏数
+            ojPostVo.setTitle(post.getTitle()); // 标题
+            ojPostVo.setAvatar(user.getAvatar()); // 用户头像
+            ojPostVo.setId(post.getId());//id
+//            ojPostVo.setCreateTime(post.getCreateTime()); // 创建时间
+//            ojPostVo.setContent(post.getContent()); // 内容
+//            ojPostVo.setCreatorName(user.getNickName()); // 用户名
+//            ojPostVo.setCreator(user.getId()); // 用户 id
+
+            // 设置标签的显示格式
+            String tags1 = post.getTags();
+            String plainTags = tags1.replaceAll("[\\[\\]\"]", "");// 移除[]和,
+            ojPostVo.setTags(Collections.singletonList(plainTags));// 标签
+            ojPostVo.setZone(post.getZone());
+            // 使用分区的枚举来查询出对应的中文信息
+            ojPostVo.setZoneName(PostZoneEnums.getTextByValue(post.getZone())); // 分区
+            ojPostVo.setViewNum(post.getViewNum()); // 观看数
+            return ojPostVo; // 返回
+        }).collect(Collectors.toList());
+
+        // 创建返回的Page数据
+        Page<OjPostVo> resultPage = new Page<>();
+        resultPage.setPageNumber(ojPostPage.getPageNumber());// 设置当前页数
+        resultPage.setPageSize(ojPostPage.getPageSize());//  设置当前分页的一页显示的页数
+        resultPage.setTotalPage(ojPostPage.getTotalPage());// 查询出的总页数
+        resultPage.setTotalRow(ojPostPage.getTotalRow());// 查询出的总行数
+        resultPage.setRecords(collect);// 结果集
+        System.err.println(collect);
+        return resultPage;
     }
 
-    //帖子首页 屈  获取五个热门帖子
+    //根据id来获取帖子
     @Override
-    public List<OjPostSimpleVo> getFiveHotPost() {
-        QueryWrapper queryWrapper = new QueryWrapper();
-        queryWrapper.select(
-                        OjPost::getId,
-                        OjPost::getTitle
-                ).orderBy(OjPost::getViewNum, true)//根据观看数进行排序
-                .limit(5);//返回5个数据
-        List<OjPost> ojPosts = mapper.selectListByQuery(queryWrapper);
-        return postConverter.toSimpleVoList(ojPosts);
+    public OjPostVo getInfoById(String id) {
+
+        SysUser user = SecurityHelper.getUser();
+        OjPostVo vo = new OjPostVo();
+        OjPost post = ojPostMapper.selectOneById(id);
+//        System.out.println(post);
+        vo.setId(post.getId()); //id
+        vo.setTitle(post.getTitle()); //标题
+        vo.setContent(post.getContent()); //内容
+        vo.setThumbNum(post.getThumbNum()); // 点赞数
+        vo.setFavourNum(post.getFavourNum()); // 收藏数
+        vo.setAvatar(user.getAvatar()); // 用户头像
+        vo.setZone(post.getZone());  //分区
+        vo.setZoneName(PostZoneEnums.getTextByValue(post.getZone())); // 分区
+        String tags1 = post.getTags(); //标签
+        String plainTags = tags1.replaceAll("[\\[\\]\"]", "");// 移除[]和,
+        vo.setTags(Collections.singletonList(plainTags));// 标签
+        vo.setCreatorName(user.getNickName()); //作者
+        vo.setCreator(user.getId());  //作者id
+        vo.setIntroduce(user.getIntroduce());//作者简介
+        vo.setAvatar(user.getAvatar());  //作者头像
+//        TODO：还需要实现
+        vo.setThumbFlag(true);
+        vo.setFavourFlag(true);
+        return vo;
     }
 
+    @Override
+    public Boolean updateById(OjPostUpdateRequest req) {
+        OjPost post = ojPostMapper.selectOneById(req.getId());//原数据
+        post.setId(req.getId());
+        post.setTitle(req.getTitle());
+        post.setContent(req.getContent());
+        post.setZone(req.getZone());
+        post.setTags(req.getTags().toString());
+
+        return ojPostMapper.update(post)==1;
+
+    }
+
+    @Override
+    public Boolean removeById(Long id) {
+
+        return ojPostMapper.deleteById(id)==1;
+    }
 }

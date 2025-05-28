@@ -4,4 +4,41 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.zrx.mapper.OjPostMapper">
 
+
+    <!--    resultMap节点-->
+<!--    <resultMap id="resOjpost" type="com.zrx.model.entity.OjPost">-->
+<!--        &lt;!&ndash; property指实体类 &ndash;&gt;-->
+<!--        <id property="id" column="id"/>-->
+<!--        <result property="avatar" column="avatar"/>-->
+<!--        <result property="tags" column="tags"/>-->
+<!--        <result property="title" column="title"/>-->
+<!--        <result property="zone" column="zone"/>-->
+<!--        <result property="tags" column="tags"/>-->
+<!--        <result property="viewNum" column="view_num"/>-->
+<!--        <result property="thumbNum" column="thumb_num"/>-->
+<!--        <result property="favourNum" column="favour_num"/>-->
+<!--        &lt;!&ndash; 使用 association 映射一对一的关系 &ndash;&gt;-->
+<!--        <association property="avatar" column="avatar"-->
+<!--                     javaType="com.zrx.sys.model.entity.SysUser"-->
+<!--                     select=""/>-->
+<!--    </resultMap>-->
+
+
+<!--    &lt;!&ndash;分页查询&ndash;&gt;-->
+<!--    &lt;!&ndash; SELECT-->
+<!--            p.*, u.avatar-->
+<!--        FROM-->
+<!--            oj_post p-->
+<!--                LEFT JOIN-->
+<!--            sys_user u ON p.user_id = u.user_id-->
+<!--            LIMIT-->
+<!--            #{offSet}, #{pageSize}&ndash;&gt;-->
+<!--    <select id="pageSelf" resultType="com.zrx.model.entity.OjPost" resultMap="resOjpost">-->
+<!--        select * from oj_post-->
+<!--                          limit #{offSet},#{pageSize}-->
+<!--    </select>-->
+<!--    <select id="selectTotal" resultType="java.lang.Integer">-->
+<!--        select count(*) from oj_post-->
+<!--    </select>-->
+
 </mapper>

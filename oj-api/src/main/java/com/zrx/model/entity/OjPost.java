@@ -89,4 +89,6 @@ public class OjPost extends BaseEntity implements Serializable {
 	@Schema(description = "是否删除")
 	private Integer delFlag;
 
+	private String avatar;
+
 }
