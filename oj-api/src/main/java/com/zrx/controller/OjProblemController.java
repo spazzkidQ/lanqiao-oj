@@ -3,6 +3,7 @@ package com.zrx.controller;
 import cn.dev33.satoken.annotation.SaCheckRole;
 import com.alibaba.excel.EasyExcel;
 import com.mybatisflex.core.paginate.Page;
+import com.zrx.mapstruct.OjProblemConverter;
 import com.zrx.model.common.Paging;
 import com.zrx.model.common.SaveGroup;
 import com.zrx.model.common.UpdateGroup;
@@ -13,6 +14,7 @@ import com.zrx.model.entity.OjProblem;
 import com.zrx.model.vo.OjProblemPageVo;
 import com.zrx.model.vo.OjProblemVo;
 import com.zrx.reuslt.Result;
+import com.zrx.reuslt.ResultCode;
 import com.zrx.security.satoken.AuthConst;
 import com.zrx.service.OjProblemService;
 import com.zrx.utils.ExcelUtil;
@@ -74,15 +76,22 @@ public class OjProblemController {
 
 	/**
 	 * 根据主键更新题目。
+	 *
 	 * @param req 题目
 	 * @return {@code true} 更新成功，{@code false} 更新失败
 	 */
 	@PutMapping("/update")
 	@Operation(summary = "根据主键更新题目")
 	@SaCheckRole(AuthConst.SUPER_ADMIN)
-	public Result<Boolean> update(@Validated({ UpdateGroup.class }) @RequestBody @Parameter(
+	public Result<Boolean> update(@Validated({UpdateGroup.class}) @RequestBody @Parameter(
 			description = "题目主键") OjProblemUpdateRequest req) {
-		return null;
+		if (req == null || req.getId() == null) {
+			return Result.fail(ResultCode.PARAM_ERROR);
+		}
+
+		OjProblem ojProblem = OjProblemConverter.updateDto2Entity(req);
+		boolean success = ojProblemService.updateById(ojProblem);
+		return success ? Result.success(true) : Result.success(false);
 	}
 
 	/**
