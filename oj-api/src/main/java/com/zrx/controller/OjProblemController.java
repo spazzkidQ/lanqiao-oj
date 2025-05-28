@@ -13,14 +13,17 @@ import com.zrx.model.common.UpdateGroup;
 import com.zrx.model.dto.problem.OjProblemAddRequest;
 import com.zrx.model.dto.problem.OjProblemQueryRequest;
 import com.zrx.model.dto.problem.OjProblemUpdateRequest;
+import com.zrx.model.entity.NoticeTable;
 import com.zrx.model.entity.OjProblem;
 import com.zrx.model.vo.OjProblemPageVo;
 import com.zrx.model.vo.OjProblemVo;
+import com.zrx.model.vo.UserRankingVO;
 import com.zrx.reuslt.Result;
 import com.zrx.reuslt.ResultCode;
 import com.zrx.security.satoken.AuthConst;
 import com.zrx.service.OjProblemService;
 import com.zrx.mapstruct.OjProblemConverter;
+import com.zrx.utils.CommonResult;
 import com.zrx.utils.ExcelUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -31,12 +34,12 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import com.zrx.service.getUserTopService;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.List;
 import java.util.stream.Collectors;
-
+import com.zrx.service.findQuestionElementService;
 /**
  * 题目 控制层。
  *
@@ -56,6 +59,10 @@ public class OjProblemController {
 	@Resource
 	private OjProblemConverter ojProblemConverter;
 
+	@Resource
+	private findQuestionElementService findQuestionElementService;
+	@Resource
+	private getUserTopService getUserTopService;
 	/**
 	 * 添加题目。
 	 *
@@ -181,5 +188,49 @@ public class OjProblemController {
 		EasyExcel.write(response.getOutputStream(), OjProblemPageVo.class)
 				.sheet("题目列表")
 				.doWrite(result.getRecords());
+	}
+	@GetMapping("/getNotice")
+	public CommonResult<List<NoticeTable>> getNotice() {
+		List<NoticeTable> list = findQuestionElementService.getNotice();
+		return CommonResult.success(list);
+	}
+	@GetMapping("/getPermission")
+	public CommonResult<Integer> getPermission(@RequestParam Long id) {
+		int permission =  findQuestionElementService.getPermission(id);
+		return CommonResult.success(permission);
+	}
+
+	@PostMapping("/insertNotice")
+	public CommonResult<Integer> insertNotice(@RequestBody NoticeTable noticeTable) {
+		int result = findQuestionElementService.insertNotice(
+				noticeTable.getType(),
+				noticeTable.getContent()
+		);
+		return CommonResult.success(result);
+	}
+	@GetMapping("/getNoticeById")//根据id获取通知
+	public CommonResult<NoticeTable> getNoticeById(@RequestParam Integer id) {
+		NoticeTable noticeTable = findQuestionElementService.getNoticeById(id);
+		System.out.println(noticeTable.getDatetime());
+		System.out.println(noticeTable.getContent());
+		return CommonResult.success(noticeTable);
+	}
+	@GetMapping("/getHotUser")
+	public CommonResult<List<UserRankingVO>> getHotUser() {
+		List<UserRankingVO> list = getUserTopService.getUserTop();
+		System.out.println(list);
+		return CommonResult.success(list);
+	}
+	@GetMapping("/getCurrentUserRankingOther")
+	public CommonResult<UserRankingVO> getCurrentUserRankOther(@RequestParam Long id) {
+		UserRankingVO userRankVO = getUserTopService.getCurrentUserRankOther(id);
+		System.out.println("userRankingVO???????"+userRankVO);
+		return CommonResult.success(userRankVO);
+	}
+	@GetMapping("/getCurrentUserRanking")
+	public CommonResult<Integer> getCurrentUserRank(@RequestParam Long id) {
+		Integer userRank = getUserTopService.getCurrentUserRank(id);
+		System.out.println("userRank???????"+userRank);
+		return CommonResult.success(userRank);
 	}
 }
