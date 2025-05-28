@@ -1,9 +1,12 @@
 package com.zrx.controller;
 
 import cn.dev33.satoken.annotation.SaCheckRole;
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.excel.EasyExcel;
 import com.mybatisflex.core.paginate.Page;
-import com.zrx.mapstruct.OjProblemConverter;
+import com.mybatisflex.core.query.QueryWrapper;
 import com.zrx.model.common.Paging;
 import com.zrx.model.common.SaveGroup;
 import com.zrx.model.common.UpdateGroup;
@@ -17,6 +20,7 @@ import com.zrx.reuslt.Result;
 import com.zrx.reuslt.ResultCode;
 import com.zrx.security.satoken.AuthConst;
 import com.zrx.service.OjProblemService;
+import com.zrx.mapstruct.OjProblemConverter;
 import com.zrx.utils.ExcelUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -25,11 +29,13 @@ import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.Serializable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 题目 控制层。
@@ -47,31 +53,48 @@ public class OjProblemController {
 	@Resource
 	private OjProblemService ojProblemService;
 
+	@Resource
+	private OjProblemConverter ojProblemConverter;
+
 	/**
 	 * 添加题目。
+	 *
 	 * @param req 题目
 	 * @return {@code true} 添加成功，{@code false} 添加失败
 	 */
 	@PostMapping("/save")
 	@Operation(summary = "保存题目")
 	@SaCheckRole(AuthConst.SUPER_ADMIN)
-	public Result<Boolean> save(@Validated({ SaveGroup.class }) @RequestBody @Parameter OjProblemAddRequest req) {
-		// 调用服务层保存题目
+	public Result<Boolean> save(@Validated({SaveGroup.class}) @RequestBody @Parameter OjProblemAddRequest req) {
 		boolean success = ojProblemService.saveProblem(req);
-		// 返回结果
 		return success ? Result.success(true) : Result.success(false);
 	}
 
 	/**
 	 * 根据主键删除题目。
+	 *
 	 * @param id 主键
 	 * @return {@code true} 删除成功，{@code false} 删除失败
 	 */
 	@DeleteMapping("/remove/{id}")
 	@Operation(summary = "根据主键删除题目")
 	@SaCheckRole(AuthConst.SUPER_ADMIN)
-	public Result<String> remove(@PathVariable @Parameter(description = "题目主键") Serializable id) {
-		return null;
+	public Result<String> remove(@PathVariable @Parameter(description = "题目主键") String id) {
+		if (id == null) {
+			return Result.fail(ResultCode.PARAM_ERROR);
+		}
+
+		try {
+			Long problemId = Long.parseLong(id);
+			OjProblem ojProblem = new OjProblem();
+			ojProblem.setId(problemId);
+			ojProblem.setDelFlag(1);
+
+			boolean success = ojProblemService.updateById(ojProblem);
+			return success ? Result.success("删除成功") : Result.fail(ResultCode.FAIL);
+		} catch (NumberFormatException e) {
+			return Result.fail(ResultCode.PARAM_ERROR);
+		}
 	}
 
 	/**
@@ -96,13 +119,19 @@ public class OjProblemController {
 
 	/**
 	 * 根据题目主键获取详细信息。
+	 *
 	 * @param id 题目主键
 	 * @return 题目详情
 	 */
 	@GetMapping("/getInfo/{id}")
 	@Operation(summary = "根据主键获取题目")
-	public Result<OjProblemVo> getInfo(@PathVariable Serializable id) {
-		return null;
+	public Result<OjProblemVo> getInfo(@PathVariable @Parameter(description = "题目主键") Serializable id) {
+		OjProblem ojProblem = ojProblemService.getById(id);
+		if (ojProblem == null) {
+			return Result.fail(ResultCode.NOT_FOUND);
+		}
+		OjProblemVo ojProblemVo = OjProblemConverter.entity2Vo(ojProblem);
+		return Result.success(ojProblemVo);
 	}
 
 	/**
