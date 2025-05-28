@@ -107,17 +107,24 @@ public class OjProblemController {
 
 	/**
 	 * 分页查询题目。
-	 * @param paging 分页对象
-	 * @param req 查询条件
-	 * @return 分页对象
+	 *
+	 * @param paging 分页参数
+	 * @param req    查询条件
+	 * @return 分页结果
 	 */
 	@GetMapping("/page")
 	@Operation(summary = "分页查询题目")
 	public Result<Page<OjProblemPageVo>> page(@Parameter(description = "分页信息") Paging paging,
 											  @Parameter(description = "查询条件") OjProblemQueryRequest req) {
+		log.info("Received pagination request: pageNumber = {}, pageSize = {}, title = {}, difficulty = {}, tags = {}",
+				paging.getPageNum(), paging.getPageSize(), req.getTitle(), req.getDifficulty(), req.getTags());
+
 		// 将 Paging 转换为 Page<OjProblem>
 		Page<OjProblem> page = new Page<>(paging.getPageNum(), paging.getPageSize());
+
+		// 执行分页查询
 		Page<OjProblemPageVo> result = ojProblemService.page(page, req);
+
 		return Result.success(result);
 	}
 
