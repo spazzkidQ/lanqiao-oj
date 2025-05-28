@@ -1,7 +1,6 @@
 package com.zrx.controller;
 import com.zrx.model.dto.post.*;
-import com.zrx.utils.PageHelperUtil;
-import com.zrx.utils.ResponseUtil;
+
 import com.mybatisflex.core.paginate.Page;
 import com.zrx.model.common.Paging;
 import com.zrx.model.entity.OjPost;
@@ -58,15 +57,7 @@ public class OjPostController {
     public Result<Boolean> remove(@PathVariable Long id){
             return Result.success(ojPostService.removeById(id));
     }
-    @PostMapping("/page")
-    public Result getPage(){
-        return null;
-    }
 
-
-
-    @Resource
-    private OjPostService ojPostService;
 
     //帖子首页 屈 分页条件查询
     @PostMapping("/page")

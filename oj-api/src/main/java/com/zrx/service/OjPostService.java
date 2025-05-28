@@ -6,7 +6,10 @@ import com.zrx.model.common.Paging;
 import com.zrx.model.dto.post.OjPostQueryRequest;
 import com.zrx.model.dto.post.OjPostUpdateRequest;
 import com.zrx.model.entity.OjPost;
+import com.zrx.model.vo.OjPostSimpleVo;
 import com.zrx.model.vo.OjPostVo;
+
+import java.util.List;
 
 /**
  * 帖子 服务层。
