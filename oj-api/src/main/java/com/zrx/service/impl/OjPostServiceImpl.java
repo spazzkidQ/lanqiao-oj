@@ -10,12 +10,16 @@ import com.mybatisflex.core.update.UpdateChain;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.zrx.enums.PostZoneEnums;
 import com.zrx.exception.BusinessException;
+import com.zrx.mapper.OjPostFavourMapper;
 import com.zrx.mapper.OjPostMapper;
+import com.zrx.mapper.OjPostThumbMapper;
 import com.zrx.mapstruct.OjPostConverter;
 import com.zrx.model.common.Paging;
 import com.zrx.model.dto.post.OjPostQueryRequest;
 import com.zrx.model.dto.post.OjPostUpdateRequest;
 import com.zrx.model.entity.OjPost;
+import com.zrx.model.entity.OjPostFavour;
+import com.zrx.model.entity.OjPostThumb;
 import com.zrx.model.vo.OjPostSimpleVo;
 import com.zrx.model.vo.OjPostVo;
 import com.zrx.security.utils.SecurityHelper;
@@ -48,6 +52,12 @@ public class OjPostServiceImpl extends ServiceImpl<OjPostMapper, OjPost> impleme
     private OjPostMapper ojPostMapper;
     @Resource
     private SysUserMapper sysUserMapper;
+
+    @Autowired
+    private OjPostFavourMapper ojPostFavourMapper;
+
+    @Autowired
+    private OjPostThumbMapper ojPostThumbMapper;
 
     @Autowired
     private PostUtil postUtil;
@@ -153,8 +163,26 @@ public class OjPostServiceImpl extends ServiceImpl<OjPostMapper, OjPost> impleme
         vo.setIntroduce(user.getIntroduce());//作者简介
         vo.setAvatar(user.getAvatar());  //作者头像
 //        TODO：还需要实现
-//        vo.setThumbFlag(true);
-//        vo.setFavourFlag(true);
+        vo.setThumbFlag(false);
+        vo.setFavourFlag(false);
+
+        //校验帖子是否收藏 获取到登录id
+        Long userId = SecurityHelper.getUser().getId();
+        QueryWrapper wrapper = new QueryWrapper();
+        wrapper.eq("post_id",id)
+                .eq("user_id",userId);
+        OjPostFavour ojPFavour = ojPostFavourMapper.selectOneByQuery(wrapper);
+        if (ojPFavour!=null){
+            //说明有数据，已经收藏
+            vo.setFavourFlag(true);
+        }
+        //校验帖子是否收藏 获取到登录id
+        OjPostThumb ojThumb = ojPostThumbMapper.selectOneByQuery(wrapper);
+        if (ojThumb!=null){
+            //说明有数据，已经点赞
+            vo.setThumbFlag(true);
+        }
+
         return vo;
     }
 
