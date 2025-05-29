@@ -22,4 +22,7 @@ public interface OjPostMapper extends BaseMapper<OjPost> {
     @Update("update oj_post set favour_num = #{favourNum} where id = #{postId}")
     int postIsFavour(Long postId, Integer favourNum);
 
+    // 增加浏览量
+    @Update("UPDATE oj_post SET view_num = view_num + 1 WHERE id = #{id}")
+    void incrementViewNum(String id);
 }

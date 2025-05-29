@@ -152,8 +152,12 @@ public class OjPostServiceImpl extends ServiceImpl<OjPostMapper, OjPost> impleme
         vo.setFavourNum(post.getFavourNum()); // 收藏数
         vo.setAvatar(user.getAvatar()); // 用户头像
         vo.setZone(post.getZone());  //分区
-        vo.setViewNum(post.getViewNum());   // 创建时间
-        vo.setCreateTime(post.getCreateTime());     // 浏览数
+        vo.setViewNum(post.getViewNum());   // 浏览数
+
+        ojPostMapper.incrementViewNum(id);  // 增加浏览量
+        vo.setViewNum(post.getViewNum() + 1);  // 显示更新后的值
+
+        vo.setCreateTime(post.getCreateTime());     // 创建时间
         vo.setZoneName(PostZoneEnums.getTextByValue(post.getZone())); // 分区
         String tags1 = post.getTags(); //标签
         String plainTags = tags1.replaceAll("[\\[\\]\"]", "");// 移除[]和,
@@ -162,7 +166,7 @@ public class OjPostServiceImpl extends ServiceImpl<OjPostMapper, OjPost> impleme
         vo.setCreator(user.getId());  //作者id
         vo.setIntroduce(user.getIntroduce());//作者简介
         vo.setAvatar(user.getAvatar());  //作者头像
-//        TODO：还需要实现
+        // 默认未点赞收藏
         vo.setThumbFlag(false);
         vo.setFavourFlag(false);
 
