@@ -41,8 +41,7 @@ public class OjPostController {
 
     //编辑功能,根据id进行查询修改
     @GetMapping("/getInfo/{id}")
-    public Result<OjPostVo> getInfo(@PathVariable("id") String id) {
-//        System.out.println(id  + "---------");
+    public Result<OjPostVo> getInfo(@PathVariable String id) {;
         return Result.success(ojPostService.getInfoById(id));
     }
 
@@ -75,5 +74,11 @@ public class OjPostController {
     @Operation(summary = "获取五个热门帖子")
     public Result<List<OjPostSimpleVo>> getFiveHotPost() {
         return Result.success(ojPostService.getFiveHotPost());
+    }
+
+    @GetMapping("/getInfoDetail/{id}")
+    @Operation(summary = "根据主键获取帖子")
+    public Result<OjPostVo> getInfoDetail(@PathVariable String id) {
+        return Result.success((ojPostService.getInfoByIdDetail(id)));
     }
 }

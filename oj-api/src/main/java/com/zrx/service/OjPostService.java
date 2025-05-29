@@ -54,4 +54,7 @@ public interface OjPostService extends IService<OjPost> {
     // 添加\取消 收藏
     Boolean postIsFavour(Long postId,Boolean isFavour);
 
+
+    // 根据id获取帖子详情
+    OjPostVo getInfoByIdDetail(String id);
 }

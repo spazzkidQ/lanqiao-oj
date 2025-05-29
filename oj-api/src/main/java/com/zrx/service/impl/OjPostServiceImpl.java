@@ -3,6 +3,7 @@ package com.zrx.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import com.alibaba.excel.util.StringUtils;
+import com.google.common.collect.Lists;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.update.UpdateChain;
@@ -48,6 +49,12 @@ public class OjPostServiceImpl extends ServiceImpl<OjPostMapper, OjPost> impleme
     @Resource
     private SysUserMapper sysUserMapper;
 
+    @Autowired
+    private PostUtil postUtil;
+    @Resource
+    private OjPostConverter postConverter;
+    @Resource
+    private OjPostMapper postMapper;
     /**
      * 分页查询
      * @param page
@@ -91,10 +98,12 @@ public class OjPostServiceImpl extends ServiceImpl<OjPostMapper, OjPost> impleme
             ojPostVo.setTitle(post.getTitle()); // 标题
             ojPostVo.setAvatar(user.getAvatar()); // 用户头像
             ojPostVo.setId(post.getId());//id
-//            ojPostVo.setCreateTime(post.getCreateTime()); // 创建时间
-//            ojPostVo.setContent(post.getContent()); // 内容
-//            ojPostVo.setCreatorName(user.getNickName()); // 用户名
-//            ojPostVo.setCreator(user.getId()); // 用户 id
+            ojPostVo.setCreateTime(post.getCreateTime()); // 创建时间
+            ojPostVo.setContent(post.getContent()); // 内容
+            ojPostVo.setCreatorName(user.getNickName()); // 用户名
+            ojPostVo.setCreator(user.getId()); // 用户 id
+            ojPostVo.setIntroduce(user.getIntroduce()); // 用户简介
+            ojPostVo.setViewNum(post.getViewNum()); // 观看数
 
             // 设置标签的显示格式
             String tags1 = post.getTags();
@@ -133,6 +142,8 @@ public class OjPostServiceImpl extends ServiceImpl<OjPostMapper, OjPost> impleme
         vo.setFavourNum(post.getFavourNum()); // 收藏数
         vo.setAvatar(user.getAvatar()); // 用户头像
         vo.setZone(post.getZone());  //分区
+        vo.setViewNum(post.getViewNum());   // 创建时间
+        vo.setCreateTime(post.getCreateTime());     // 浏览数
         vo.setZoneName(PostZoneEnums.getTextByValue(post.getZone())); // 分区
         String tags1 = post.getTags(); //标签
         String plainTags = tags1.replaceAll("[\\[\\]\"]", "");// 移除[]和,
@@ -142,8 +153,8 @@ public class OjPostServiceImpl extends ServiceImpl<OjPostMapper, OjPost> impleme
         vo.setIntroduce(user.getIntroduce());//作者简介
         vo.setAvatar(user.getAvatar());  //作者头像
 //        TODO：还需要实现
-        vo.setThumbFlag(true);
-        vo.setFavourFlag(true);
+//        vo.setThumbFlag(true);
+//        vo.setFavourFlag(true);
         return vo;
     }
 
@@ -165,12 +176,7 @@ public class OjPostServiceImpl extends ServiceImpl<OjPostMapper, OjPost> impleme
 
         return ojPostMapper.deleteById(id)==1;
     }
-    @Autowired
-    private PostUtil postUtil;
-    @Resource
-    private OjPostConverter postConverter;
-    @Resource
-    private OjPostMapper postMapper;
+
 
 
     //帖子首页  屈  分页条件查询
@@ -191,12 +197,16 @@ public class OjPostServiceImpl extends ServiceImpl<OjPostMapper, OjPost> impleme
         }
         QueryWrapper queryWrapper = new QueryWrapper();
         queryWrapper.select(
+                OjPost::getId,        // 帖子id
                 OjPost::getTitle,     // 帖子标题
+                OjPost::getZone,      // 帖子分区
                 OjPost::getContent,   // 帖子内容
                 OjPost::getViewNum,   // 帖子观看数
                 OjPost::getThumbNum,  // 帖子点赞数
                 OjPost::getFavourNum, // 帖子收藏数
-                OjPost::getCreator    // 关联用户头像
+                OjPost::getCreator,   // 关联用户头像
+                OjPost::getCreateTime
+
         );
 
         // 区域查询条件——标签和分区是链接在一起的，不可以单独实现
@@ -281,6 +291,52 @@ public class OjPostServiceImpl extends ServiceImpl<OjPostMapper, OjPost> impleme
         }
         int result = ojPostMapper.postIsFavour(postId, ojPostVo.getFavourNum());
         return result > 0;
+    }
+
+
+
+    /**
+     * 根据帖子ID获取帖子详细信息
+     * @param id 帖子ID
+     * @return 帖子详细信息
+     */
+    @Override
+    public OjPostVo getInfoByIdDetail(String id) {
+        // 1. 根据被点击的ID查询帖子信息
+        OjPost post = postMapper.selectOneById(Long.parseLong(id));
+        if (post == null) {
+            throw new BusinessException("未找到该帖子");
+        }
+
+        // 2. 更新帖子浏览量
+        boolean updated = UpdateChain.of(OjPost.class)
+                .set(OjPost::getViewNum, post.getViewNum() + 1)
+                .where(OjPost::getId).eq(Long.parseLong(id))
+                .update();
+
+        if (updated) {
+            post.setViewNum(post.getViewNum() + 1);
+        }
+
+        // 3. 转换为VO对象
+        OjPostVo vo = postConverter.toVo(post);
+
+        // 4. 设置帖子作者信息
+        postUtil.setPostAuthor(Lists.newArrayList(vo));
+
+        // 5. 设置分区名称
+        setZoneName(vo);
+
+        return vo;
+    }
+
+    /**
+     * 设置帖子的分区名称
+     * 根据分区代码获取对应的分区名称
+     * @param ojPostVo 帖子VO对象
+     */
+    private void setZoneName(OjPostVo ojPostVo) {
+        ojPostVo.setZoneName(PostZoneEnums.getTextByValue(ojPostVo.getZone()));
     }
 
 
