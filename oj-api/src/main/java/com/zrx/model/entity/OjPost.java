@@ -89,6 +89,8 @@ public class OjPost extends BaseEntity implements Serializable {
 	@Schema(description = "是否删除")
 	private Integer delFlag;
 
+	// MyBatis-Flex 的忽略注解 ↓↓↓
+	@Column(ignore = true)
 	private String avatar;
 
 }

@@ -4,16 +4,24 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
+import com.alibaba.fastjson.JSON;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.zrx.enums.ProblemDifficultyEnum;
 import com.zrx.exception.BusinessException;
 import com.zrx.mapper.OjProblemMapper;
+import com.zrx.mapper.OjProblemSubmitMapper;
+import com.zrx.model.common.Paging;
+import com.zrx.model.dto.problem.JudgeCase;
+import com.zrx.model.dto.problem.JudgeConfig;
 import com.zrx.model.dto.problem.OjProblemAddRequest;
 import com.zrx.model.dto.problem.OjProblemQueryRequest;
 import com.zrx.model.entity.OjProblem;
+import com.zrx.model.entity.OjProblemSubmit;
 import com.zrx.model.vo.OjProblemPageVo;
+import com.zrx.model.vo.OjProblemVo;
+import com.zrx.security.utils.SecurityHelper;
 import com.zrx.service.OjProblemService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +41,9 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class OjProblemServiceImpl extends ServiceImpl<OjProblemMapper, OjProblem> implements OjProblemService {
+
+    @Autowired
+    private OjProblemSubmitMapper problemSubmitMapper;
 
     @Autowired
     private OjProblemMapper ojProblemMapper;
@@ -164,4 +175,100 @@ public class OjProblemServiceImpl extends ServiceImpl<OjProblemMapper, OjProblem
     public void updateSubmitAndAcceptedNum(Long problemId, Integer submitNum, Integer acceptedNum) {
         ojProblemMapper.updateSubmitAndAcceptedNum(problemId, submitNum, acceptedNum);
     }
+
+    /**
+     * 根据 登录id 查看已做题目。
+     *  1.先去题目提交表中筛查用户通过的题目id
+     *  2.去题目表中 查找对应id 的题目内容
+     */
+    @Override
+    public Page<OjProblemVo> findListById(Paging page) {
+        Long userId = SecurityHelper.getUser().getId();
+        List<Long> ids = findTrueById(userId);
+        if (ids==null){
+            throw new BusinessException("当前用户暂无通过记录");
+        }
+        List<OjProblemVo> ojByIds = findOjByIds(ids, page);
+        if (ojByIds==null){
+            throw new BusinessException("查询错误");
+        }
+        // 搭建page信息 获取总页数
+        int totalNum = (int)Math.ceil ((double) ojByIds.size() / page.getPageSize());
+        Page<OjProblemVo> pageVo = new Page<>();
+        pageVo.setPageSize(page.getPageSize());
+        pageVo.setPageNumber(page.getPageNum());
+        pageVo.setTotalPage(totalNum);
+        pageVo.setTotalRow(ojByIds.size());
+        pageVo.setRecords(ojByIds);
+        return pageVo;
+    }
+
+    /**
+     * 根据登录id查找题目ids集合
+     */
+    private List<Long> findTrueById(Long userId) {
+        List<Long> ids = new ArrayList<>();
+        QueryWrapper wrapper = new QueryWrapper()
+                .eq("status",2)
+                .eq("user_id", userId);
+        List<OjProblemSubmit> ojProblemSubmits = problemSubmitMapper.selectListByQuery(wrapper);
+        if (ojProblemSubmits.isEmpty()){
+            return null;
+        }
+        for (OjProblemSubmit ojs : ojProblemSubmits) {
+            if (!ids.contains(ojs.getQuestionId())){
+                ids.add(ojs.getQuestionId());
+            }
+        }
+        return ids;
+    }
+
+    /**
+     *  根据 题目ids 查找对应的题目内容
+     */
+    private List<OjProblemVo> findOjByIds(List<Long> ids, Paging page){
+        QueryWrapper wrapper = new QueryWrapper()
+                .in("id",ids)
+                .limit((page.getPageNum()-1)*page.getPageSize(),page.getPageSize());
+        List<OjProblem> ojProblems = ojProblemMapper.selectListByQuery(wrapper);
+        List<OjProblemVo> ojProblemsVo = new ArrayList<>();
+        for (OjProblem ojProblem : ojProblems) {
+            ojProblemsVo.add(convertToOjProblemVo(ojProblem));
+        }
+        return ojProblemsVo;
+    }
+
+    /**
+     * 将ojProblem转化成vo
+     */
+    private OjProblemVo convertToOjProblemVo(OjProblem ojProblem) {
+        OjProblemVo ojProblemVo = new OjProblemVo();
+
+        // 直接映射简单类型
+        ojProblemVo.setId(ojProblem.getId());
+        ojProblemVo.setTitle(ojProblem.getTitle());
+        ojProblemVo.setContent(ojProblem.getContent());
+        ojProblemVo.setDifficulty(ojProblem.getDifficulty());
+        ojProblemVo.setAnsLanguage(ojProblem.getAnsLanguage());
+        ojProblemVo.setAnswer(ojProblem.getAnswer());
+        ojProblemVo.setSubmitNum(ojProblem.getSubmitNum());
+        ojProblemVo.setAcceptedNum(ojProblem.getAcceptedNum());
+        ojProblemVo.setThumbNum(ojProblem.getThumbNum());
+        ojProblemVo.setFavourNum(ojProblem.getFavourNum());
+
+        // tags 字段转换
+        List<String> tags = JSON.parseArray(ojProblem.getTags(), String.class);
+        ojProblemVo.setTags(tags);
+
+        // judgeCase 字段转换
+        List<JudgeCase> judgeCases = JSON.parseArray(ojProblem.getJudgeCase(), JudgeCase.class);
+        ojProblemVo.setJudgeCase(judgeCases);
+
+        // judgeConfig 字段转换
+        JudgeConfig judgeConfig = JSON.parseObject(ojProblem.getJudgeConfig(), JudgeConfig.class);
+        ojProblemVo.setJudgeConfig(judgeConfig);
+
+        return ojProblemVo;
+    }
+
 }

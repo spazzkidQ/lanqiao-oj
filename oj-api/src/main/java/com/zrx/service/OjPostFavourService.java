@@ -14,6 +14,13 @@ import com.zrx.model.vo.OjPostVo;
  */
 public interface OjPostFavourService extends IService<OjPostFavour> {
 
+    // 帖子收藏
+    Boolean addFavour(Long id);
 
+    //取消收藏
+    Boolean removeFavour(Long id);
+
+    // 查询用户收藏帖子
+    Page<OjPostVo> findFavourList(Long id, Paging page);
 
 }

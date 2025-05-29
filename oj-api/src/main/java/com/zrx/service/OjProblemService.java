@@ -2,10 +2,12 @@ package com.zrx.service;
 
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.service.IService;
+import com.zrx.model.common.Paging;
 import com.zrx.model.dto.problem.OjProblemAddRequest;
 import com.zrx.model.dto.problem.OjProblemQueryRequest;
 import com.zrx.model.entity.OjProblem;
 import com.zrx.model.vo.OjProblemPageVo;
+import com.zrx.model.vo.OjProblemVo;
 
 
 /**
@@ -56,4 +58,8 @@ public interface OjProblemService extends IService<OjProblem> {
      * @param acceptedNum 通过数
      */
     void updateSubmitAndAcceptedNum(Long problemId, Integer submitNum, Integer acceptedNum);
+
+    // 根据 登录id 查看已做题目。  Luo
+    Page<OjProblemVo> findListById(Paging page);
+
 }

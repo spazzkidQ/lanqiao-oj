@@ -44,4 +44,14 @@ public interface OjPostService extends IService<OjPost> {
 
     //获取五个热力帖子
     List<OjPostSimpleVo> getFiveHotPost();
+
+    //  根据id查询文章  LuoTaoLing
+    OjPostVo getPostById(Long id);
+
+    // 添加\取消 点赞
+    Boolean postIsThumb(Long postId,Boolean isThumb);
+
+    // 添加\取消 收藏
+    Boolean postIsFavour(Long postId,Boolean isFavour);
+
 }

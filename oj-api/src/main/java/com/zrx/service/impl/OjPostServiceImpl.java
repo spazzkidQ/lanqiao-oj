@@ -1,5 +1,6 @@
 package com.zrx.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import com.alibaba.excel.util.StringUtils;
 import com.mybatisflex.core.paginate.Page;
@@ -230,4 +231,57 @@ public class OjPostServiceImpl extends ServiceImpl<OjPostMapper, OjPost> impleme
         List<OjPost> ojPosts = mapper.selectListByQuery(queryWrapper);
         return postConverter.toSimpleVoList(ojPosts);
     }
+
+
+    @Override
+    public OjPostVo getPostById(Long id) {
+        OjPost ojPost = ojPostMapper.selectOneById(id);
+        if (ojPost==null){
+            return null;
+        }
+        return BeanUtil.copyProperties(ojPost,OjPostVo.class);
+    }
+
+    /**
+     * 用户添加点赞和取消点赞
+     */
+    @Override
+    public Boolean postIsThumb(Long postId, Boolean isThumb) {
+        OjPostVo ojPostVo = this.getPostById(postId);
+        if (ojPostVo==null){
+            throw new BusinessException("该文章不存在");
+        }
+        if (isThumb){
+            //添加点赞
+            ojPostVo.setThumbNum(ojPostVo.getThumbNum()+1);
+        }else {
+            //取消点赞
+            ojPostVo.setThumbNum(ojPostVo.getThumbNum()-1);
+        }
+        int result = ojPostMapper.postIsThumb(postId, ojPostVo.getThumbNum());
+        return result > 0;
+    }
+
+
+    /**
+     * 用户添加收藏和取消收藏
+     */
+    @Override
+    public Boolean postIsFavour(Long postId, Boolean isFavour) {
+        OjPostVo ojPostVo = this.getPostById(postId);
+        if (ojPostVo==null){
+            throw new BusinessException("该文章不存在");
+        }
+        if (isFavour){
+            //添加收藏
+            ojPostVo.setFavourNum(ojPostVo.getFavourNum()+1);
+        }else {
+            //取消收藏
+            ojPostVo.setFavourNum(ojPostVo.getFavourNum()-1);
+        }
+        int result = ojPostMapper.postIsFavour(postId, ojPostVo.getFavourNum());
+        return result > 0;
+    }
+
+
 }

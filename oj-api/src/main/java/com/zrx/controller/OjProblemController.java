@@ -233,4 +233,19 @@ public class OjProblemController {
 		System.out.println("userRank???????"+userRank);
 		return CommonResult.success(userRank);
 	}
+
+	/**
+	 *  根据 登录id 查看已做题目。 LuoTaoLing
+	 */
+	@GetMapping("/listById")
+	public Result listById(@Parameter(description = "分页信息") Paging page){
+		System.out.println(page);
+		Page<OjProblemVo> listById = ojProblemService.findListById(page);
+		if (listById==null){
+			return Result.fail("查询已做题目失败");
+		}
+		return Result.success(listById);
+	}
+
+
 }
