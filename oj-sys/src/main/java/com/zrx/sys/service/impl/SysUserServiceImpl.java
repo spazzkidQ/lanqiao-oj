@@ -22,14 +22,17 @@ import com.zrx.security.utils.SecurityHelper;
 import com.zrx.sys.enums.UserStatusEnum;
 import com.zrx.sys.mapper.SysRoleMapper;
 import com.zrx.sys.mapper.SysRoleUserMapper;
+import com.zrx.sys.mapper.SysUSerManageMapper;
 import com.zrx.sys.mapper.SysUserMapper;
 import com.zrx.sys.mapstruct.SysUserMap;
 import com.zrx.sys.model.dto.SysUserRequest;
 import com.zrx.sys.model.dto.SysUserRoleBo;
 import com.zrx.sys.model.dto.SysUserUpdateRequest;
+import com.zrx.sys.model.dto.ChangePasswordRequest;
 import com.zrx.sys.model.entity.SysRole;
 import com.zrx.sys.model.entity.SysRoleUser;
 import com.zrx.sys.model.entity.SysUser;
+import com.zrx.sys.model.vo.SysUSerManage;
 import com.zrx.sys.model.vo.SysUserResponse;
 import com.zrx.sys.model.vo.SysUserSimpleResponse;
 import com.zrx.sys.service.SysFileService;
@@ -70,6 +73,8 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 	private final SysRoleMapper roleMapper;
 
 	private final RoleUtil roleUtil;
+
+	private final SysUSerManageMapper sysUSerManageMapper;
 
 	@Override
 	public String uploadAvatar(MultipartFile file) {
@@ -265,6 +270,113 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 	public Boolean kick(Long id) {
 		StpUtil.kickout(id);
 		return true;
+	}
+
+	@Override
+	public String changePassword(ChangePasswordRequest request) {
+		SysUser user;
+		try {
+			MaskManager.skipMask();
+			user = mapper.selectOneByQuery(new QueryWrapper().where(SYS_USER.ID.eq(request.getUserId())));
+			if (user == null) {
+				return "用户不存在";
+			}
+			// 校验旧密码
+			String oldPwdDb = Md5Util.inputPassToDBPass(request.getOldPassword(), user.getSalt());
+			System.out.println(oldPwdDb);
+			System.out.println(user.getPassword());
+			if (!oldPwdDb.equals(user.getPassword())) {
+				return "旧密码错误";
+			}
+			// 校验新密码格式（可选）
+			String newPwdDb = Md5Util.inputPassToDBPass(request.getNewPassword(), user.getSalt());
+			user.setPassword(newPwdDb);
+			int update = mapper.update(user);
+			if (update != 1) {
+				return "密码修改失败";
+			}
+			return "密码修改成功";
+		} catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+	@Override
+	public SysUSerManage setSecurityQuestion(SysUSerManage request) {
+		SysUSerManage translate = sysUSerManageMapper.translate(request.getUserId());
+		if (translate == null){
+			return null;
+		}
+		return translate;
+
+	}
+
+	@Override
+	public int getSecurityQuestion(SysUSerManage userId) {
+		int update = sysUSerManageMapper.update(userId);
+		if (update != 1){
+			return 0;
+		}
+		return 1;
+	}
+
+	@Override
+	public int verifySecurityQuestion(SysUSerManage request) {
+		System.out.println(request);
+		int insert = sysUSerManageMapper.insert(request);
+		if (insert != 1){
+			return 0;
+		}
+		return 1;
+	}
+
+	@Override
+	public String sendMobileCode(String userId, String mobile) {
+		// 这里可以集成短信服务商SDK，现用简单模拟
+		if (StringUtils.isBlank(userId) || StringUtils.isBlank(mobile)) {
+			throw new BusinessException("参数不能为空");
+		}
+		// 生成验证码（6位数字）
+		String code = String.valueOf((int)((Math.random() * 9 + 1) * 100000));
+		// TODO: 调用短信服务商API发送验证码
+		System.out.println("向手机号 " + mobile + " 发送验证码: " + code);
+		// 你可以将验证码存入缓存（如Redis），此处略
+		return code;
+	}
+
+	@Override
+	public String bindMobile(String userId, String mobile, String code) {
+		if (StringUtils.isBlank(userId) || StringUtils.isBlank(mobile) || StringUtils.isBlank(code)) {
+			return "参数不能为空";
+		}
+		SysUser user = mapper.selectOneByQuery(new QueryWrapper().where(SYS_USER.ID.eq(userId)));
+		if (user == null) {
+			return "用户不存在";
+		}
+		user.setMobile(mobile);
+		int update = mapper.update(user);
+		if (update != 1) {
+			return "绑定失败";
+		}
+		return "绑定成功";
+	}
+
+	@Override
+	public String bindEmail(String userId, String email, String code) {
+		if (StringUtils.isBlank(userId) || StringUtils.isBlank(email) || StringUtils.isBlank(code)) {
+			return "参数不能为空";
+		}
+		SysUser user = mapper.selectOneByQuery(new QueryWrapper().where(SYS_USER.ID.eq(userId)));
+		if (user == null) {
+			return "用户不存在";
+		}
+		// TODO: 校验验证码，后续可补充
+		user.setEmail(email);
+		int update = mapper.update(user);
+		if (update != 1) {
+			return "绑定失败";
+		}
+		return "绑定成功";
 	}
 
 }

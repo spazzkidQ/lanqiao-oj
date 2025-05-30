@@ -7,18 +7,24 @@ import com.zrx.exception.BusinessException;
 import com.zrx.model.common.Paging;
 import com.zrx.reuslt.Result;
 import com.zrx.security.satoken.AuthConst;
+import com.zrx.sys.model.dto.ChangePasswordRequest;
 import com.zrx.sys.model.dto.SysUserRequest;
 import com.zrx.sys.model.dto.SysUserUpdateRequest;
 import com.zrx.sys.model.entity.SysUser;
+import com.zrx.sys.model.vo.SysUSerManage;
 import com.zrx.sys.model.vo.SysUserResponse;
 import com.zrx.sys.model.vo.SysUserSimpleResponse;
 import com.zrx.sys.service.SysUserService;
+import com.zrx.sys.utils.EmailUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.Map;
 
 /**
  * 系统用户 控制层。
@@ -33,6 +39,9 @@ public class SysUserController {
 
 	@Resource
 	private SysUserService sysUserService;
+	
+	@Resource
+	private EmailUtil emailUtil;
 
 	/**
 	 * 上传头像
@@ -138,6 +147,117 @@ public class SysUserController {
 	@SaCheckRole(AuthConst.SUPER_ADMIN)
 	public Result<Boolean> kick(@PathVariable @Parameter(description = "主键") Long id) {
 		return Result.success(sysUserService.kick(id));
+	}
+	/**
+	 * 修改密码
+	 */
+	@PostMapping("/changePassword")
+	@Operation(summary = "修改密码")
+	public Result<String> changePassword(@RequestBody ChangePasswordRequest request) {
+		return Result.success(sysUserService.changePassword(request));
+	}
+	/**
+	 * 设置密保
+	 */
+	@PostMapping("/setSecurityQuestion")
+	@Operation(summary = "设置密保")
+	public Result<String> changePassword(@RequestBody SysUSerManage request) {
+		SysUSerManage sysUSerManage = sysUserService.setSecurityQuestion(request);
+		if (sysUSerManage != null) {
+			int securityQuestion = sysUserService.getSecurityQuestion(request);
+			if (securityQuestion == 1) {
+				return Result.success("设置密保成功");
+			} else {
+				return Result.fail("设置密保失败");
+			}
+		}else {
+			int i = sysUserService.verifySecurityQuestion(request);
+			if (i == 1) {
+				return Result.success("密保设置成功");
+			} else {
+				return Result.fail("密保设置失败");
+			}
+		}
+	}
+	/*
+	* 查看密保
+	* */
+	@PostMapping("/viewThePassword")
+	@Operation(summary = "查看密保")
+	public Result<String> viewThePassword(@RequestBody SysUSerManage request) {
+		SysUSerManage sysUSerManage = sysUserService.setSecurityQuestion(request);
+		if (sysUSerManage != null){
+			System.out.println("                           断行专用                  ");
+			System.out.println(sysUSerManage.getQuestion());
+			return Result.success(sysUSerManage.getQuestion());
+		}else {
+			return null;
+		}
+	}
+	/*
+	* 给手机号发送短信
+	* */
+	@PostMapping("/sendMobileCode")
+	@Operation(summary = "发送手机验证码")
+	public Result<String> sendMobileCode(@RequestBody Map<String, String> payload) {
+		String userId = payload.get("userId");
+			String mobile = payload.get("mobile");
+		if (userId == null || mobile == null) {
+			return Result.fail("参数不完整");
+		}
+		String success = sysUserService.sendMobileCode(userId, mobile);
+		if (success == null){
+			return Result.fail("发送失败");
+		}
+		return Result.success(success);
+	}
+
+	@PostMapping("/bindMobile")
+	@Operation(summary = "绑定手机号")
+	public Result<String> bindMobile(@RequestBody Map<String, String> payload) {
+		String userId = payload.get("userId");
+		String mobile = payload.get("mobile");
+		String code = payload.get("code");
+		String result = sysUserService.bindMobile(userId, mobile, code);
+		if ("绑定成功".equals(result)) {
+			return Result.success(result);
+		} else {
+			return Result.fail(result);
+		}
+	}
+
+	@PostMapping("/sendEmailCode")
+	@Operation(summary = "发送验证码")
+	public Result<String> sendEmailCode(@RequestBody Map<String, String> payload){
+		String email = payload.get("email");
+		// 邮件标题
+		String title = "验证码";
+		// 生成6位随机验证码
+		String code = String.valueOf((int)((Math.random() * 9 + 1) * 100000));
+		// 邮件正文
+		String content = "您的验证码为：" + code + "，有效期5分钟。";
+		try {
+			emailUtil.sendSimpleMail(email, title, content);
+			// 这里可以将验证码存入缓存（如Redis），略
+			return Result.success(code);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return Result.fail("发送邮件失败");
+		}
+	}
+
+	@PostMapping("/bindEmail")
+	@Operation(summary = "绑定邮箱")
+	public Result<String> bindEmail(@RequestBody Map<String, String> payload) {
+		String userId = payload.get("userId");
+		String email = payload.get("email");
+		String code = payload.get("code");
+		String result = sysUserService.bindEmail(userId, email, code);
+		if ("绑定成功".equals(result)) {
+			return Result.success(result);
+		} else {
+			return Result.fail(result);
+		}
 	}
 
 }
