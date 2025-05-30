@@ -27,6 +27,11 @@ public class OjProblemPageVo {
 	private Long id;
 
 	/**
+	 * 提交题目表中的当前题目提交的id
+	 */
+	@Schema(description = "submitId")
+	private Long submitId;
+	/**
 	 * 标题
 	 */
 	@ColumnWidth(10)

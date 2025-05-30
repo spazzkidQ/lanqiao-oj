@@ -16,6 +16,7 @@ import com.zrx.model.dto.problem.OjProblemUpdateRequest;
 import com.zrx.model.entity.NoticeTable;
 import com.zrx.model.entity.OjProblem;
 import com.zrx.model.vo.OjProblemPageVo;
+import com.zrx.model.vo.OjProblemSubmitVo;
 import com.zrx.model.vo.OjProblemVo;
 import com.zrx.model.vo.UserRankingVO;
 import com.zrx.reuslt.Result;
@@ -245,6 +246,27 @@ public class OjProblemController {
 			return Result.fail("查询已做题目失败");
 		}
 		return Result.success(listById);
+	}
+
+	/**
+	 * 	根据当前用户id查询出当前用户已经完成的题目信息
+	 * @param page
+	 * @return
+	 */
+	@GetMapping("/getSubProblemByUserId/page")
+	public Result<Page<OjProblemPageVo>> getSubProblemByUserId(Paging page){
+		return Result.success(ojProblemService.getSubProblemByUserId(page));
+	}
+
+
+	/**
+	 * 	根据当前用户已经完成的题目，根据主键id查询用户提交的信息
+	 * @param id
+	 * @return
+	 */
+	@GetMapping("/getInfoBySubmitId/{id}")
+	public Result<OjProblemSubmitVo> getInfoBySubmitId(@PathVariable String id){
+		return Result.success(ojProblemService.getInfoBySubmitId(id));
 	}
 
 

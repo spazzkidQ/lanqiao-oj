@@ -8,6 +8,7 @@ import com.alibaba.fastjson.JSON;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
+import com.zrx.codesandbox.model.JudgeInfo;
 import com.zrx.enums.ProblemDifficultyEnum;
 import com.zrx.exception.BusinessException;
 import com.zrx.mapper.OjProblemMapper;
@@ -20,17 +21,22 @@ import com.zrx.model.dto.problem.OjProblemQueryRequest;
 import com.zrx.model.entity.OjProblem;
 import com.zrx.model.entity.OjProblemSubmit;
 import com.zrx.model.vo.OjProblemPageVo;
+import com.zrx.model.vo.OjProblemSubmitVo;
 import com.zrx.model.vo.OjProblemVo;
 import com.zrx.security.utils.SecurityHelper;
 import com.zrx.service.OjProblemService;
+import com.zrx.sys.model.entity.SysUser;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
+import static com.zrx.model.entity.table.OjProblemSubmitTableDef.OJ_PROBLEM_SUBMIT;
+import static com.zrx.model.entity.table.OjProblemTableDef.OJ_PROBLEM;
 
 /**
  * 题目 服务实现类。
@@ -269,6 +275,133 @@ public class OjProblemServiceImpl extends ServiceImpl<OjProblemMapper, OjProblem
         ojProblemVo.setJudgeConfig(judgeConfig);
 
         return ojProblemVo;
+    }
+
+
+    /**
+     * 根据当前用户id查询出当前用户已经完成的题目信息
+     * @param page
+     * @return
+     */
+    @Override
+    public Page<OjProblemPageVo> getSubProblemByUserId(Paging page) {
+        SysUser user = SecurityHelper.getUser();
+        QueryWrapper queryWrapper = new QueryWrapper();
+        queryWrapper.select(OJ_PROBLEM_SUBMIT.ALL_COLUMNS)
+                .where(OJ_PROBLEM_SUBMIT.USER_ID.eq(user.getId()))
+                .and(OJ_PROBLEM_SUBMIT.CODE_STATUS.eq(3));
+        // 查询出当前用户提交的题目的所有信息
+
+        Set<Long> mySet = new HashSet<>();
+        // 查询出的所有提交的题目信息
+        List<OjProblemSubmit> ojProblemSubmits = problemSubmitMapper.selectListByQuery(queryWrapper);
+
+        // 去重
+        List<OjProblemSubmit> collect1 = ojProblemSubmits.stream().filter(sub -> mySet.add(sub.getQuestionId())).collect(Collectors.toList());
+
+        List<OjProblemPageVo> myList = collect1.stream().map(sub -> {
+            // 创建新的查询
+            QueryWrapper newQuery = new QueryWrapper();
+            newQuery.select(OJ_PROBLEM.ALL_COLUMNS).where(OJ_PROBLEM.ID.ge(sub.getQuestionId()));
+            OjProblem ojProblem = mapper.selectOneByQuery(newQuery);
+
+            // 创建返回实例
+            if (ojProblem == null) {
+                return null;
+            }
+            OjProblemPageVo vo = new OjProblemPageVo();
+            vo.setId(ojProblem.getId());
+            vo.setSubmitId(sub.getId());
+            vo.setTitle(ojProblem.getTitle());
+            vo.setContent(ojProblem.getContent());
+            vo.setTags(Collections.singletonList(ojProblem.getTags().replaceAll("[\\[\\]\"]", " "))); // 设置标签
+            vo.setSubmitNum(ojProblem.getSubmitNum());
+            vo.setAcceptedNum(ojProblem.getAcceptedNum());
+            vo.setDifficulty(setDifficulty(ojProblem.getDifficulty()));
+            return vo;
+        }).collect(Collectors.toList());
+
+        Page<OjProblemSubmit> paginate = problemSubmitMapper.paginate(Page.of(page.getPageNum(), page.getPageSize()), queryWrapper);
+
+       /*  // 遍历
+        List<OjProblemPageVo> collect = paginate.getRecords().stream().map(sub -> {
+            // 创建新的查询
+            QueryWrapper newQuery = new QueryWrapper();
+            newQuery.select(OJ_PROBLEM.ALL_COLUMNS).where(OJ_PROBLEM.ID.ge(sub.getQuestionId()));
+            OjProblem ojProblem = mapper.selectOneByQuery(newQuery);
+
+            // 创建返回实例
+            if (ojProblem == null) {
+                return null;
+            }
+            OjProblemPageVo vo = new OjProblemPageVo();
+            vo.setId(ojProblem.getId());
+            vo.setSubmitId(sub.getId());
+            vo.setTitle(ojProblem.getTitle());
+            vo.setContent(ojProblem.getContent());
+            vo.setTags(Collections.singletonList(ojProblem.getTags().replaceAll("[\\[\\]\"]", " "))); // 设置标签
+            vo.setSubmitNum(ojProblem.getSubmitNum());
+            vo.setAcceptedNum(ojProblem.getAcceptedNum());
+            vo.setDifficulty(setDifficulty(ojProblem.getDifficulty()));
+            return vo;
+        }).collect(Collectors.toList());
+
+
+        // 如果当前页没有有效数据，尝试查询后续的页面
+        if (collect.isEmpty() && paginate.getPageNumber() < paginate.getTotalPage()) {
+            Paging paging = new Paging();
+            paging.setPageNum(page.getPageNum() + 1);
+            paging.setPageSize(page.getPageSize());
+            return getSubProblemByUserId(paging);
+        } */
+        Page<OjProblemPageVo> resultPage = new Page<>();
+        resultPage.setPageNumber(paginate.getPageNumber());
+        resultPage.setPageSize(paginate.getPageSize());
+        resultPage.setTotalRow(myList.size());
+        resultPage.setRecords(myList);
+        return resultPage;
+    }
+
+    /**
+     * 根据当前用户已经完成的题目，根据主键id查询用户提交的信息
+     * @param id
+     * @return
+     */
+    @Override
+    public OjProblemSubmitVo getInfoBySubmitId(String id) {
+        if(id == null){
+            throw new BusinessException("当前id无法找到");
+        }
+        OjProblemSubmit ojProblemSubmit = problemSubmitMapper.selectOneById(id);
+        if(ojProblemSubmit == null) throw new BusinessException("当前题目不存在");
+        // 根据题目的id 查询出题目的信息
+        OjProblem ojProblem = mapper.selectOneById(ojProblemSubmit.getQuestionId());
+        // 创建实例
+        OjProblemSubmitVo vo = new OjProblemSubmitVo();
+        vo.setId(ojProblemSubmit.getId());
+        vo.setTitle(ojProblem.getTitle());
+        vo.setContent(ojProblem.getContent());
+        vo.setTags(Collections.singletonList(ojProblem.getTags().replaceAll("[\\[\\]\"]", " "))); // 设置标签
+        vo.setDifficulty(setDifficulty(ojProblem.getDifficulty()));
+        vo.setLanguage(ojProblemSubmit.getLanguage());
+        vo.setCode(ojProblemSubmit.getCode());
+        vo.setCodeStatus(String.valueOf(ojProblemSubmit.getStatus()));
+        vo.setOutputList(Collections.singletonList(ojProblemSubmit.getOutput()));
+
+        String judgeInfo = ojProblemSubmit.getJudgeInfo(); // 获取当前用户的判题信息
+        JudgeInfo judgeInfo1 = com.alibaba.fastjson2.JSON.parseObject(judgeInfo, JudgeInfo.class);
+        vo.setJudgeInfo(judgeInfo1); // 设置判题结果集
+        vo.setStatus(String.valueOf(ojProblemSubmit.getStatus()));
+        vo.setQuestionId(ojProblem.getId());
+        vo.setUserId(SecurityHelper.getUser().getId());
+        return vo;
+    }
+
+
+    public String setDifficulty(Integer dif){
+        if(dif == 0) return "简单";
+        if(dif == 1) return "中等";
+        else return "困难";
     }
 
 }

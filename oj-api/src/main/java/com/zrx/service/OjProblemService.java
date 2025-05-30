@@ -7,6 +7,7 @@ import com.zrx.model.dto.problem.OjProblemAddRequest;
 import com.zrx.model.dto.problem.OjProblemQueryRequest;
 import com.zrx.model.entity.OjProblem;
 import com.zrx.model.vo.OjProblemPageVo;
+import com.zrx.model.vo.OjProblemSubmitVo;
 import com.zrx.model.vo.OjProblemVo;
 
 
@@ -61,5 +62,12 @@ public interface OjProblemService extends IService<OjProblem> {
 
     // 根据 登录id 查看已做题目。  Luo
     Page<OjProblemVo> findListById(Paging page);
+
+
+
+    // 根据当前用户id查询出当前用户已经完成的题目信息
+    Page<OjProblemPageVo> getSubProblemByUserId(Paging page);
+    // 根据当前用户已经完成的题目，根据主键id查询用户提交的信息
+    OjProblemSubmitVo getInfoBySubmitId(String id);
 
 }

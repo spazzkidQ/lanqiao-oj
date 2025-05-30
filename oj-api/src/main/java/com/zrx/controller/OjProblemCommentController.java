@@ -1,6 +1,7 @@
 package com.zrx.controller;
 
 import com.zrx.model.dto.problemComment.ProblemCommentRequest;
+import com.zrx.model.vo.PostCommentVo;
 import com.zrx.model.vo.ProblemCommentVo;
 import com.zrx.reuslt.Result;
 import com.zrx.service.ProblemCommentService;
@@ -24,5 +25,47 @@ import java.util.List;
 @Tag(name = "OjProblemComment", description = "题目评论接口")
 @RequestMapping("/problem/comment")
 public class OjProblemCommentController {
+    @Resource
+    private ProblemCommentService problemCommentService;
+
+    /**
+     * 保存题目评论
+     * @param req
+     * @return
+     */
+    @PostMapping("/save")
+    public Result<Boolean> saveComment(@RequestBody ProblemCommentRequest req){
+        return Result.success(problemCommentService.save(req));
+    }
+
+    /**
+     *  获取根节点评论(当前题目的id)
+     * @param problemId
+     * @return
+     */
+    @GetMapping("/list")
+    public Result<List<ProblemCommentVo>> getProblemCommentByProblemId(String problemId){
+        return Result.success(problemCommentService.getProblemCommentByProblemId(problemId));
+    }
+
+    /**
+     *  根据父节点id获取题目子评论
+     * @param problemId
+     * @return
+     */
+    @GetMapping("/listChildren")
+    public Result<List<ProblemCommentVo>> getListChildren(Long problemId) {
+        return Result.success(problemCommentService.getListChildren(problemId));
+    }
+
+
+    /**
+     * 根据主键删除题目评论
+     * @return
+     */
+    @DeleteMapping("/remove/{id}")
+    public Result<Boolean> deleteByProblemId(@PathVariable String id){
+        return Result.success(problemCommentService.deleteByProblemId(id));
+    }
 
 }
