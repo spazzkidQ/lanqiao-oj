@@ -32,6 +32,7 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.zrx.model.entity.table.OjPostCommentTableDef.OJ_POST_COMMENT;
 
 
 /**
@@ -51,6 +52,20 @@ public class OjPostCommentServiceImpl extends ServiceImpl<OjPostCommentMapper, O
 
     @Autowired
     private SysUserMapper sysUserMapper;
+
+    /**
+     * 根据帖子id获取评论数量
+     * @param postId
+     * @return
+     */
+    @Override
+    public Long getCountNum(Long postId) {
+        QueryWrapper queryWrapper = new QueryWrapper();
+        queryWrapper.select(OJ_POST_COMMENT.ALL_COLUMNS)
+                .from(OJ_POST_COMMENT)
+                .where(OJ_POST_COMMENT.POST_ID.eq(postId));
+        return (long)postCommentMapper.selectListByQuery(queryWrapper).size();
+    }
 
     /**
      *  1.评论不能为null

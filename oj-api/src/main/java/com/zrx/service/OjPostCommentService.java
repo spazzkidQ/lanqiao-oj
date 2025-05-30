@@ -24,4 +24,7 @@ public interface OjPostCommentService extends IService<OjPostComment> {
 
     //根据 id 查询完整树型结构评论
     List<PostCommentVo> findList(Long postId);
+
+    // 根据帖子id获取评论数量
+    Long getCountNum(Long postId);
 }

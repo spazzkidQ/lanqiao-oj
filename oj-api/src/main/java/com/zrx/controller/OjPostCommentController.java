@@ -31,6 +31,17 @@ public class OjPostCommentController {
     private OjPostCommentService ojPostCommentService;
 
     /**
+     * 根据帖子id获取评论数量
+     * @param postId
+     * @return
+     */
+    @GetMapping("/get/num")
+    public Result<Long> getNum(Long postId){
+        return Result.success(ojPostCommentService.getCountNum(postId));
+    }
+
+
+    /**
      *  1.查询文章是否存在
      *  2.如果存在父id，先验证父id是否存在
      *  3.评论不能为null
