@@ -15,6 +15,7 @@ import com.zrx.mapper.OjPostMapper;
 import com.zrx.mapper.OjPostThumbMapper;
 import com.zrx.mapstruct.OjPostConverter;
 import com.zrx.model.common.Paging;
+import com.zrx.model.dto.post.OjPostAddRequest;
 import com.zrx.model.dto.post.OjPostQueryRequest;
 import com.zrx.model.dto.post.OjPostUpdateRequest;
 import com.zrx.model.entity.OjPost;
@@ -369,6 +370,22 @@ public class OjPostServiceImpl extends ServiceImpl<OjPostMapper, OjPost> impleme
      */
     private void setZoneName(OjPostVo ojPostVo) {
         ojPostVo.setZoneName(PostZoneEnums.getTextByValue(ojPostVo.getZone()));
+    }
+
+    /**
+     *  保存帖子和发送帖子
+     * @param req
+     * @return
+     */
+    @Override
+    public Boolean save(OjPostAddRequest req) {
+        OjPost ojPost = new OjPost();
+        ojPost.setTitle(req.getTitle());
+        ojPost.setContent(req.getContent());
+        ojPost.setZone(req.getZone());
+        ojPost.setTags(req.getTags().toString());
+        if(mapper.insert(ojPost) < 0) return false;
+        else return true;
     }
 
 

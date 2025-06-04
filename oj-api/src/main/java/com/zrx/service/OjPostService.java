@@ -3,6 +3,7 @@ package com.zrx.service;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.service.IService;
 import com.zrx.model.common.Paging;
+import com.zrx.model.dto.post.OjPostAddRequest;
 import com.zrx.model.dto.post.OjPostQueryRequest;
 import com.zrx.model.dto.post.OjPostUpdateRequest;
 import com.zrx.model.entity.OjPost;
@@ -54,6 +55,8 @@ public interface OjPostService extends IService<OjPost> {
     // 添加\取消 收藏
     Boolean postIsFavour(Long postId,Boolean isFavour);
 
+    // 保存帖子
+    Boolean save(OjPostAddRequest req);
 
     // 根据id获取帖子详情
     OjPostVo getInfoByIdDetail(String id);

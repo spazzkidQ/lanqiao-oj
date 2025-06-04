@@ -67,6 +67,15 @@ public class OjPostController {
     }
 
     /**
+     *  保存帖子 / 发帖
+     * @return
+     */
+    @PostMapping("/save")
+    public Result<Boolean> saveCard(@RequestBody OjPostAddRequest req){
+        return Result.success(ojPostService.save(req));
+    }
+
+    /**
      * 帖子首页 屈  获取五个热门帖子
      * @return 帖子简单信息Vo
      */
