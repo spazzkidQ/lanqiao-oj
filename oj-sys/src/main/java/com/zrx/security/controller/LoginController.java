@@ -73,4 +73,10 @@ public class LoginController {
 		return Result.ok();
 	}
 
+	@GetMapping("/inquire")
+	@Operation(summary = "查询用户", description = "根据用户名查询用户是否存在")
+	public boolean Inquire(@RequestParam("username") String username) {
+		return true;
+	}
+
 }

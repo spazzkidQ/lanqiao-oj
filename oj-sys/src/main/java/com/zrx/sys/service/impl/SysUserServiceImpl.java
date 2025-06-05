@@ -44,8 +44,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.zrx.sys.model.entity.table.SysRoleTableDef.SYS_ROLE;
@@ -377,6 +380,34 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 			return "绑定失败";
 		}
 		return "绑定成功";
+	}
+
+
+	@Override
+	public String uploadAvatarToUserAvatars(MultipartFile file) {
+		if (file == null || file.isEmpty()) {
+			throw new BusinessException("文件不能为空");
+		}
+		// 修改为 D:/IT/ITCase/Vue/WS/lanqiao-oj/user-avatars/ 目录
+		String uploadDir = "D:/IT/ITCase/Vue/WS/lanqiao-oj/oj-sys/src/main/resources/user-avatars/";
+		File dir = new File(uploadDir);
+		if (!dir.exists()) {
+			dir.mkdirs();
+		}
+		SysUser user = com.zrx.security.utils.SecurityHelper.getUser();
+		String userId = String.valueOf(user.getId());
+		String ext = file.getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf("."));
+		String fileName = userId + ext;
+		File dest = new File(uploadDir + fileName);
+		try {
+			file.transferTo(dest);
+		} catch (IOException e) {
+			throw new BusinessException("文件保存失败");
+		}
+		String avatarPath = "/user-avatars/" + fileName;
+		user.setAvatar(avatarPath);
+		updateById(user);
+		return avatarPath;
 	}
 
 }

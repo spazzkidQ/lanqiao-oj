@@ -96,4 +96,11 @@ public interface SysUserService extends IService<SysUser> {
 	 */
 	String bindEmail(String userId, String email, String code);
 
+	/**
+	 * 本地上传头像（存储到 user-avatars 文件夹）
+	 * @param file 头像文件
+	 * @return 头像访问路径
+	 */
+	String uploadAvatarToUserAvatars(org.springframework.web.multipart.MultipartFile file);
+
 }

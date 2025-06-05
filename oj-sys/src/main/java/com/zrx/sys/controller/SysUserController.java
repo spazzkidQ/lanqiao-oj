@@ -51,7 +51,7 @@ public class SysUserController {
 	@PostMapping("/upload/avatar")
 	@Operation(summary = "上传头像")
 	public Result<String> upload(@RequestParam("file") MultipartFile file) {
-		return Result.success(sysUserService.uploadAvatar(file));
+		return Result.success(sysUserService.uploadAvatarToUserAvatars(file));
 	}
 
 	/**

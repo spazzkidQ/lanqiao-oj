@@ -112,4 +112,8 @@ public class SysUserResponse {
 	@Schema(description = "是否在线")
 	private Boolean online;
 
+
+	@Schema(description = "是否在线")
+	private String ZiYuan;
+
 }

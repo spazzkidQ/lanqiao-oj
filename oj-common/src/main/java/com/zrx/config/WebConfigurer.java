@@ -3,6 +3,7 @@ package com.zrx.config;
 import cn.dev33.satoken.interceptor.SaInterceptor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
@@ -21,6 +22,12 @@ public class WebConfigurer implements WebMvcConfigurer {
 
 		// 注册根路径拦截器，拦截根路径重定向到接口文档
 		registry.addInterceptor(new ApiDocInterceptor()).addPathPatterns("/**");
+	}
+
+	@Override
+	public void addResourceHandlers(ResourceHandlerRegistry registry) {
+		registry.addResourceHandler("/user-avatars/**")
+				.addResourceLocations("file:D:/IT/ITCase/Vue/WS/lanqiao-oj/oj-sys/src/main/resources/user-avatars/");
 	}
 
 }
