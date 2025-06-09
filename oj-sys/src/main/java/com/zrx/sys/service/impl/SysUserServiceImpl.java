@@ -32,6 +32,7 @@ import com.zrx.sys.model.dto.ChangePasswordRequest;
 import com.zrx.sys.model.entity.SysRole;
 import com.zrx.sys.model.entity.SysRoleUser;
 import com.zrx.sys.model.entity.SysUser;
+import com.zrx.sys.model.vo.ForgotPasswordResponse;
 import com.zrx.sys.model.vo.SysUSerManage;
 import com.zrx.sys.model.vo.SysUserResponse;
 import com.zrx.sys.model.vo.SysUserSimpleResponse;
@@ -389,7 +390,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 			throw new BusinessException("文件不能为空");
 		}
 		// 修改为 D:/IT/ITCase/Vue/WS/lanqiao-oj/user-avatars/ 目录
-		String uploadDir = "D:/workSpace/cr_lanqiao_ojproject2/lanqiao-oj-two/oj-sys/src/main/resources/user-avatars/";
+		String uploadDir = "D:/IT/ITCase/Vue/WS/lanqiao-oj/oj-sys/src/main/resources/user-avatars/";
 		File dir = new File(uploadDir);
 		if (!dir.exists()) {
 			dir.mkdirs();
@@ -408,6 +409,55 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 		user.setAvatar(avatarPath);
 		updateById(user);
 		return avatarPath;
+	}
+
+	@Override
+	public Long forgotPassword(String username) {
+		SysUser user = getByUsername(username);
+		return user != null ? user.getId() : null;
+	}
+
+	@Override
+	public ForgotPasswordResponse forgotPasswordInfo(String username) {
+		SysUser user = getByUsername(username);
+		if (user == null) {
+			return null;
+		}
+		ForgotPasswordResponse resp = new ForgotPasswordResponse();
+		resp.setId(user.getId());
+		resp.setMobile(user.getMobile());
+		resp.setEmail(user.getEmail());
+		SysUSerManage manage = sysUSerManageMapper.translate(String.valueOf(user.getId()));
+		if (manage != null) {
+			resp.setQuestion(manage.getQuestion());
+		} else {
+			resp.setQuestion(null);
+		}
+		return resp;
+	}
+
+	@Override
+	public String resetPassword(String userId, String password) {
+		SysUser user = mapper.selectOneByQuery(new QueryWrapper().where(SYS_USER.ID.eq(userId)));
+		if (user == null) {
+			return "用户不存在";
+		};
+		String dbPass = com.zrx.security.utils.Md5Util.inputPassToDBPass(password, user.getSalt());
+		int update = ((com.zrx.sys.mapper.SysUserMapper)mapper).resetPassword(userId, dbPass);
+		if (update != 1) {
+			return "密码重置失败";
+		}
+		return "密码重置成功";
+	}
+
+	@Override
+	public boolean verifyQuestion(String userId, String answer) {
+		SysUSerManage manage = sysUSerManageMapper.translate(userId);
+		System.out.println(manage);
+		if (manage == null || !manage.getAnswer().equals(answer) ) {
+			return false;
+		}
+		return true;
 	}
 
 }

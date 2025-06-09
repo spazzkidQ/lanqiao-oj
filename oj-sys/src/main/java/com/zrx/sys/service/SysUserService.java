@@ -13,6 +13,7 @@ import com.zrx.sys.model.entity.SysUser;
 import com.zrx.sys.model.vo.SysUSerManage;
 import com.zrx.sys.model.vo.SysUserResponse;
 import com.zrx.sys.model.vo.SysUserSimpleResponse;
+import com.zrx.sys.model.vo.ForgotPasswordResponse;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -103,4 +104,23 @@ public interface SysUserService extends IService<SysUser> {
 	 */
 	String uploadAvatarToUserAvatars(org.springframework.web.multipart.MultipartFile file);
 
+	/**
+	 * 忘记密码-根据用户名查找用户id
+	 */
+	Long forgotPassword(String username);
+
+	/**
+	 * 忘记密码-根据用户名查找用户信息
+	 */
+	ForgotPasswordResponse forgotPasswordInfo(String username);
+
+	/**
+	 * 重置密码-根据userId修改密码
+	 */
+	String resetPassword(String userId, String password);
+
+	/**
+	 * 校验密保答案
+	 */
+	boolean verifyQuestion(String userId, String answer);
 }

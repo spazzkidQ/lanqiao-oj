@@ -1,6 +1,7 @@
 package com.zrx.sys.controller;
 
 import cn.dev33.satoken.annotation.SaCheckRole;
+import cn.dev33.satoken.annotation.SaIgnore;
 import cn.dev33.satoken.annotation.SaMode;
 import com.mybatisflex.core.paginate.Page;
 import com.zrx.exception.BusinessException;
@@ -258,6 +259,15 @@ public class SysUserController {
 		} else {
 			return Result.fail(result);
 		}
+	}
+
+	@PostMapping("/resetPassword")
+	@Operation(summary = "重置密码-根据userId修改密码")
+	public Result<String> resetPassword(@RequestBody Map<String, String> body) {
+		String userId = body.get("userId");
+		String password = body.get("password");
+		String result = sysUserService.resetPassword(userId, password);
+		return Result.success(result);
 	}
 
 }
