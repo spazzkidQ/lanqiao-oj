@@ -79,15 +79,11 @@ public class OjPostServiceImpl extends ServiceImpl<OjPostMapper, OjPost> impleme
         List<String> tags = req.getTags();
         // 创建QueryWrapper
         QueryWrapper queryWrapper = new QueryWrapper();
-        // 使用工具类来获取当前用户信息 这里可以能缓存需要重要查询用户信息
-        SysUser user = SecurityHelper.getUser();
-        // 根据用户id查询用户信息
-        SysUser sysUser = sysUserMapper.selectOneById(user.getId());
         // 根据条件查询
         queryWrapper.select(OJ_POST.ALL_COLUMNS) // 查询OJ_post表中所有字段
                 .where(OJ_POST.TITLE.like(title))
                 .and(OJ_POST.ZONE.like(zone))
-                .and(OJ_POST.CREATOR.eq(user.getId())) // 创建者的id 必须与用户的id一致
+//                .and(OJ_POST.CREATOR.eq(user.getId())) // 创建者的id 必须与用户的id一致
                 .orderBy(OJ_POST.VIEW_NUM.desc()); // 根据观看数降序排序
         // 使用Hutool 的工具类的判断标签是否为空，为其添加模糊查询条件
         if (CollUtil.isNotEmpty(tags)) {
@@ -101,6 +97,7 @@ public class OjPostServiceImpl extends ServiceImpl<OjPostMapper, OjPost> impleme
         System.err.println(ojPostPage);
         // 将查询出的数据 转换为VO对象
         List<OjPostVo> collect = ojPostPage.getRecords().stream().map(post -> {
+            SysUser user = sysUserMapper.selectOneById(post.getCreator());
             // 创建vo对象
             OjPostVo ojPostVo = new OjPostVo();
             // 设置参数
