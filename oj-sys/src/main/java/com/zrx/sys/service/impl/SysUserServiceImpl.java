@@ -389,7 +389,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 			throw new BusinessException("文件不能为空");
 		}
 		// 修改为 D:/IT/ITCase/Vue/WS/lanqiao-oj/user-avatars/ 目录
-		String uploadDir = "D:/IT/ITCase/Vue/WS/lanqiao-oj/oj-sys/src/main/resources/user-avatars/";
+		String uploadDir = "D:/workSpace/cr_lanqiao_ojproject2/lanqiao-oj-two/oj-sys/src/main/resources/user-avatars/";
 		File dir = new File(uploadDir);
 		if (!dir.exists()) {
 			dir.mkdirs();
