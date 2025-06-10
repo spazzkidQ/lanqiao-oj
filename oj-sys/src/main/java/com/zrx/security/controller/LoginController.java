@@ -8,6 +8,7 @@ import com.zrx.security.model.dto.LoginRequest;
 import com.zrx.security.model.dto.RegisterRequest;
 import com.zrx.security.model.vo.LoginResponse;
 import com.zrx.security.service.CaptchaService;
+import com.zrx.sys.model.vo.ForgotPasswordResponse;
 import com.zrx.sys.service.SysUserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -22,6 +23,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * 登录管理
@@ -73,10 +75,27 @@ public class LoginController {
 		return Result.ok();
 	}
 
-	@GetMapping("/inquire")
-	@Operation(summary = "查询用户", description = "根据用户名查询用户是否存在")
-	public boolean Inquire(@RequestParam("username") String username) {
-		return true;
+	@PostMapping("/forgotPassword")
+	@Operation(summary = "忘记密码-根据用户名查找用户信息")
+	public Result<ForgotPasswordResponse> forgotPassword(@RequestBody Map<String, String> body) {
+		String username = body.get("username");
+		ForgotPasswordResponse resp = sysUserService.forgotPasswordInfo(username);
+		if (resp == null){
+			return Result.fail("用户名不存在");
+		}
+		return Result.success(resp);
+	}
+
+	@PostMapping("/verifyQuestion")
+	@Operation(summary = "校验密保答案")
+	public Result<Boolean> verifyQuestion(@RequestBody Map<String, String> body) {
+		String userId = body.get("userId");
+		String answer = body.get("answer");
+		boolean result = sysUserService.verifyQuestion(userId, answer);
+		if (!result){
+			return Result.fail("密保答案错误");
+		}
+		return Result.success(result);
 	}
 
 }
