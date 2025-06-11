@@ -26,13 +26,14 @@ import com.zrx.model.vo.OjProblemVo;
 import com.zrx.security.utils.SecurityHelper;
 import com.zrx.service.OjProblemService;
 import com.zrx.sys.model.entity.SysUser;
+import com.zrx.utils.RedisCache;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static com.zrx.model.entity.table.OjProblemSubmitTableDef.OJ_PROBLEM_SUBMIT;
@@ -53,6 +54,9 @@ public class OjProblemServiceImpl extends ServiceImpl<OjProblemMapper, OjProblem
 
     @Autowired
     private OjProblemMapper ojProblemMapper;
+
+    @Resource
+    private RedisCache redisCache;
 
     @Override
     public boolean saveProblem(OjProblemAddRequest req) {
@@ -89,6 +93,8 @@ public class OjProblemServiceImpl extends ServiceImpl<OjProblemMapper, OjProblem
         // 使用 JSONUtil 进行正确的 JSON 转换
         if (CollUtil.isNotEmpty(req.getTags())) {
             ojProblem.setTags(JSONUtil.toJsonStr(req.getTags()));
+            // 更新标签缓存
+            updateTagsCache();
         }
         ojProblem.setAnsLanguage(req.getAnsLanguage());
         ojProblem.setAnswer(req.getAnswer());
@@ -103,6 +109,48 @@ public class OjProblemServiceImpl extends ServiceImpl<OjProblemMapper, OjProblem
         return this.save(ojProblem);
     }
 
+    /**
+     * 更新标签缓存
+     */
+    private void updateTagsCache() {
+        try {
+            // 查询所有未删除的题目
+            QueryWrapper queryWrapper = QueryWrapper.create()
+                    .select("DISTINCT tags")
+                    .where("del_flag = ?", 0);
+            List<OjProblem> problems = this.list(queryWrapper);
+
+            // 收集所有标签
+            Set<String> allTags = new HashSet<>();
+            for (OjProblem problem : problems) {
+                if (StrUtil.isNotBlank(problem.getTags())) {
+                    List<String> tags = JSONUtil.toList(problem.getTags(), String.class);
+                    allTags.addAll(tags);
+                }
+            }
+
+            // 更新缓存
+            redisCache.cacheProblemTags(new ArrayList<>(allTags));
+        } catch (Exception e) {
+            log.error("更新标签缓存失败", e);
+        }
+    }
+
+    /**
+     * 获取所有标签
+     */
+    public List<String> getAllTags() {
+        // 先从缓存获取
+        List<String> tags = redisCache.getProblemTags();
+        if (CollUtil.isNotEmpty(tags)) {
+            return tags;
+        }
+
+        // 缓存不存在，从数据库获取并更新缓存
+        updateTagsCache();
+        return redisCache.getProblemTags();
+    }
+
     @Override
     public Page<OjProblemPageVo> page(Page<OjProblem> page, OjProblemQueryRequest req) {
         // 构建查询条件
@@ -112,6 +160,25 @@ public class OjProblemServiceImpl extends ServiceImpl<OjProblemMapper, OjProblem
                         "thumb_num", "favour_num"
                 )
                 .where("del_flag = ?", 0); // 只查询未删除的题目
+
+        // 添加标题筛选条件
+        if (StrUtil.isNotBlank(req.getTitle())) {
+            queryWrapper.and("title like ?", "%" + req.getTitle() + "%");
+        }
+
+        // 添加难度筛选条件
+        if (req.getDifficulty() != null) {
+            queryWrapper.and("difficulty = ?", req.getDifficulty());
+        }
+
+        // 添加标签筛选条件
+        if (CollUtil.isNotEmpty(req.getTags())) {
+            queryWrapper.and(wrapper -> {
+                for (String tag : req.getTags()) {
+                    wrapper.like("tags", "\"" + tag + "\"");
+                }
+            });
+        }
 
         // 执行分页查询
         Page<OjProblem> problemPage = this.page(page, queryWrapper);
@@ -149,8 +216,7 @@ public class OjProblemServiceImpl extends ServiceImpl<OjProblemMapper, OjProblem
 
                     vo.setSubmitNum(submitNum);
                     vo.setAcceptedNum(acceptedNum);
-                    vo.setThumbNum(problem.getThumbNum());
-                    vo.setFavourNum(problem.getFavourNum());
+
 
                     return vo;
                 })
@@ -175,6 +241,7 @@ public class OjProblemServiceImpl extends ServiceImpl<OjProblemMapper, OjProblem
     public Integer getAcceptedNum(Long problemId) {
         return ojProblemMapper.getAcceptedNum(problemId);
     }
+
 
     @Override
     @Transactional(rollbackFor = Exception.class)

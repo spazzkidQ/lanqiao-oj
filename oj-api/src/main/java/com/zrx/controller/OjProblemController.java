@@ -190,6 +190,16 @@ public class OjProblemController {
 				.sheet("题目列表")
 				.doWrite(result.getRecords());
 	}
+	/**
+	 * 获取所有标签
+	 */
+	@GetMapping("/tags")
+	@Operation(summary = "获取所有标签")
+	public Result<List<String>> getAllTags() {
+		List<String> tags = ojProblemService.getAllTags();
+		return Result.success(tags);
+	}
+
 	@GetMapping("/getNotice")
 	public CommonResult<List<NoticeTable>> getNotice() {
 		List<NoticeTable> list = findQuestionElementService.getNotice();

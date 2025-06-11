@@ -10,6 +10,8 @@ import com.zrx.model.vo.OjProblemPageVo;
 import com.zrx.model.vo.OjProblemSubmitVo;
 import com.zrx.model.vo.OjProblemVo;
 
+import java.util.List;
+
 
 /**
  * 题目 服务层。
@@ -25,7 +27,11 @@ public interface OjProblemService extends IService<OjProblem> {
      * @return 是否添加成功
      */
     boolean saveProblem(OjProblemAddRequest req);
-
+    /**
+     * 获取所有标签
+     * @return 标签列表
+     */
+    List<String> getAllTags();
     /**
      * 分页查询题目
      *
@@ -59,6 +65,7 @@ public interface OjProblemService extends IService<OjProblem> {
      * @param acceptedNum 通过数
      */
     void updateSubmitAndAcceptedNum(Long problemId, Integer submitNum, Integer acceptedNum);
+
 
     // 根据 登录id 查看已做题目。  Luo
     Page<OjProblemVo> findListById(Paging page);

@@ -91,7 +91,7 @@ public class OjPostCommentServiceImpl extends ServiceImpl<OjPostCommentMapper, O
                 if (ojParent==null){
                     throw new BusinessException("回复评论并不存在");
                 }
-                if (!ojParent.getParentId().equals(ojPostComment.getPostId())){
+                if (!ojParent.getId().equals(ojPostComment.getParentId())){
                     throw new BusinessException("回复评论不存在");
                 }
             }
