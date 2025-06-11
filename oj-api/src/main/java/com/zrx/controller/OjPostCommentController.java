@@ -49,7 +49,6 @@ public class OjPostCommentController {
      */
     @PostMapping("/save")
     public Result addComment(@RequestBody OjPostComment ojPostComment){
-        // System.out.println(ojPostComment);
         if (!ojPostCommentService.addComment(ojPostComment)){
             return Result.fail("评论失败");
         }
