@@ -47,7 +47,7 @@ public class OjPostCommentController {
      *  3.评论不能为null
      *  4.添加评论后查询该文章的所有评论
      */
-    @PostMapping("/add")
+    @PostMapping("/save")
     public Result addComment(@RequestBody OjPostComment ojPostComment){
         // System.out.println(ojPostComment);
         if (!ojPostCommentService.addComment(ojPostComment)){
