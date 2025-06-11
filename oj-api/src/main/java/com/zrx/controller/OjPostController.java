@@ -85,9 +85,9 @@ public class OjPostController {
         return Result.success(ojPostService.getFiveHotPost());
     }
 
-    @GetMapping("/getInfoDetail/{id}")
-    @Operation(summary = "根据主键获取帖子")
-    public Result<OjPostVo> getInfoDetail(@PathVariable String id) {
-        return Result.success((ojPostService.getInfoByIdDetail(id)));
-    }
+    //@GetMapping("/getInfoDetail/{id}")
+    //@Operation(summary = "根据主键获取帖子")
+    //public Result<OjPostVo> getInfoDetail(@PathVariable String id) {
+    //    return Result.success((ojPostService.getInfoByIdDetail(id)));
+    //}
 }

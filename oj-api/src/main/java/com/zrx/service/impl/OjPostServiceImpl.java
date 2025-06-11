@@ -138,17 +138,24 @@ public class OjPostServiceImpl extends ServiceImpl<OjPostMapper, OjPost> impleme
     //根据id来获取帖子
     @Override
     public OjPostVo getInfoById(String id) {
-
-        SysUser user = SecurityHelper.getUser();
         OjPostVo vo = new OjPostVo();
         OjPost post = ojPostMapper.selectOneById(id);
-//        System.out.println(post);
+        if (post == null) {
+            throw new BusinessException("未找到该帖子");
+        }
+        
+        // 获取帖子创建者的信息
+        SysUser creator = sysUserMapper.selectOneById(post.getCreator());
+        if (creator == null) {
+            throw new BusinessException("未找到帖子作者信息");
+        }
+
         vo.setId(post.getId()); //id
         vo.setTitle(post.getTitle()); //标题
         vo.setContent(post.getContent()); //内容
         vo.setThumbNum(post.getThumbNum()); // 点赞数
         vo.setFavourNum(post.getFavourNum()); // 收藏数
-        vo.setAvatar(user.getAvatar()); // 用户头像
+        vo.setAvatar(creator.getAvatar()); // 使用帖子创建者的头像
         vo.setZone(post.getZone());  //分区
         vo.setViewNum(post.getViewNum());   // 浏览数
 
@@ -160,10 +167,11 @@ public class OjPostServiceImpl extends ServiceImpl<OjPostMapper, OjPost> impleme
         String tags1 = post.getTags(); //标签
         String plainTags = tags1.replaceAll("[\\[\\]\"]", "");// 移除[]和,
         vo.setTags(Collections.singletonList(plainTags));// 标签
-        vo.setCreatorName(user.getNickName()); //作者
-        vo.setCreator(user.getId());  //作者id
-        vo.setIntroduce(user.getIntroduce());//作者简介
-        vo.setAvatar(user.getAvatar());  //作者头像
+        vo.setCreatorName(creator.getNickName()); // 使用帖子创建者的昵称
+        vo.setCreator(creator.getId());  // 使用帖子创建者的ID
+        vo.setIntroduce(creator.getIntroduce()); // 使用帖子创建者的简介
+        vo.setAvatar(creator.getAvatar());  // 使用帖子创建者的头像
+
         // 默认未点赞收藏
         vo.setThumbFlag(false);
         vo.setFavourFlag(false);
@@ -330,44 +338,44 @@ public class OjPostServiceImpl extends ServiceImpl<OjPostMapper, OjPost> impleme
      * @param id 帖子ID
      * @return 帖子详细信息
      */
-    @Override
-    public OjPostVo getInfoByIdDetail(String id) {
-        // 1. 根据被点击的ID查询帖子信息
-        OjPost post = postMapper.selectOneById(Long.parseLong(id));
-        if (post == null) {
-            throw new BusinessException("未找到该帖子");
-        }
-
-        // 2. 更新帖子浏览量
-        boolean updated = UpdateChain.of(OjPost.class)
-                .set(OjPost::getViewNum, post.getViewNum() + 1)
-                .where(OjPost::getId).eq(Long.parseLong(id))
-                .update();
-
-        if (updated) {
-            post.setViewNum(post.getViewNum() + 1);
-        }
-
-        // 3. 转换为VO对象
-        OjPostVo vo = postConverter.toVo(post);
-
-        // 4. 设置帖子作者信息
-        postUtil.setPostAuthor(Lists.newArrayList(vo));
-
-        // 5. 设置分区名称
-        setZoneName(vo);
-
-        return vo;
-    }
+    //@Override
+    //public OjPostVo getInfoByIdDetail(String id) {
+    //    // 1. 根据被点击的ID查询帖子信息
+    //    OjPost post = postMapper.selectOneById(Long.parseLong(id));
+    //    if (post == null) {
+    //        throw new BusinessException("未找到该帖子");
+    //    }
+    //
+    //    // 2. 更新帖子浏览量
+    //    boolean updated = UpdateChain.of(OjPost.class)
+    //            .set(OjPost::getViewNum, post.getViewNum() + 1)
+    //            .where(OjPost::getId).eq(Long.parseLong(id))
+    //            .update();
+    //
+    //    if (updated) {
+    //        post.setViewNum(post.getViewNum() + 1);
+    //    }
+    //
+    //    // 3. 转换为VO对象
+    //    OjPostVo vo = postConverter.toVo(post);
+    //
+    //    // 4. 设置帖子作者信息
+    //    postUtil.setPostAuthor(Lists.newArrayList(vo));
+    //
+    //    // 5. 设置分区名称
+    //    setZoneName(vo);
+    //
+    //    return vo;
+    //}
 
     /**
      * 设置帖子的分区名称
      * 根据分区代码获取对应的分区名称
      * @param ojPostVo 帖子VO对象
      */
-    private void setZoneName(OjPostVo ojPostVo) {
-        ojPostVo.setZoneName(PostZoneEnums.getTextByValue(ojPostVo.getZone()));
-    }
+    //private void setZoneName(OjPostVo ojPostVo) {
+    //    ojPostVo.setZoneName(PostZoneEnums.getTextByValue(ojPostVo.getZone()));
+    //}
 
     /**
      *  保存帖子和发送帖子
