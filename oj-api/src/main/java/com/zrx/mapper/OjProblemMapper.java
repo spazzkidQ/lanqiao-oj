@@ -15,6 +15,7 @@ import org.apache.ibatis.annotations.Update;
  */
 @Mapper
 public interface OjProblemMapper extends BaseMapper<OjProblem> {
+
     //获取提交总数（所有未删除的提交）
     @Select("SELECT COUNT(*) FROM oj_problem_submit s " +
             "INNER JOIN oj_problem p ON s.question_id = p.id " +

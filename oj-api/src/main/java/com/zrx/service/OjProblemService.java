@@ -49,6 +49,7 @@ public interface OjProblemService extends IService<OjProblem> {
      */
     Integer getSubmitNum(Long problemId);
 
+
     /**
      * 获取题目的通过数
      *
