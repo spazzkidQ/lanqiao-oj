@@ -160,7 +160,8 @@ public class OjProblemServiceImpl extends ServiceImpl<OjProblemMapper, OjProblem
                         "id", "title", "content", "tags", "difficulty",
                         "thumb_num", "favour_num"
                 )
-                .where("del_flag = ?", 0); // 只查询未删除的题目
+                .where("del_flag = ?", 0) // 只查询未删除的题目
+                .orderBy("create_time desc"); // 根据创建时间降序排序
 
         // 添加标题筛选条件
         if (StrUtil.isNotBlank(req.getTitle())) {
