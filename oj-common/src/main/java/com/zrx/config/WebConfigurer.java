@@ -28,10 +28,8 @@ public class WebConfigurer implements WebMvcConfigurer {
 
 	@Override
 	public void addResourceHandlers(ResourceHandlerRegistry registry) {
-		File myfile = new File("user-avatars");
-		String absolutePath = myfile.getAbsolutePath();
 		registry.addResourceHandler("/user-avatars/**")
-				.addResourceLocations("file:" + absolutePath);
+				.addResourceLocations("classpath:/user-avatars/");
 	}
 
 }
