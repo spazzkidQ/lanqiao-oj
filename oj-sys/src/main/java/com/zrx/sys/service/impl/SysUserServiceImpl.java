@@ -158,6 +158,9 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 		sysUser.setSalt(salt);
 		sysUser.setStatus(UserStatusEnum.ENABLED.getValue());
 		sysUser.setMobile(mobile);
+		sysUser.setNickName(registerRequest.getUsername());
+		sysUser.setRealName(registerRequest.getUsername());
+		sysUser.setAvatar("/user-avatars/001.jpg");
 
 		// 是否有相同用户名的用户
 		if (exists(new QueryWrapper().where(SYS_USER.USERNAME.eq(username)))) {
@@ -168,9 +171,9 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 		SysRoleUser sysRoleUser = new SysRoleUser();
 		sysRoleUser.setUserId(sysUser.getId());
 		sysRoleUser.setRoleId(QueryChain.of(roleMapper)
-			.select(SYS_ROLE.ID)
-			.where(SYS_ROLE.ROLE_CODE.eq(AuthConst.USER))
-			.oneAs(Long.class));
+				.select(SYS_ROLE.ID)
+				.where(SYS_ROLE.ROLE_CODE.eq(AuthConst.USER))
+				.oneAs(Long.class));
 		int insertChildFlag = roleUserMapper.insert(sysRoleUser);
 		if (!saveFlag && insertChildFlag != 1) {
 			throw new BusinessException("注册失败");
@@ -181,9 +184,9 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 	@Override
 	public Boolean disable(String id) {
 		boolean updateFlag = UpdateChain.of(mapper)
-			.where(SYS_USER.ID.eq(id))
-			.set(SYS_USER.STATUS, UserStatusEnum.DISABLE.getValue())
-			.update();
+				.where(SYS_USER.ID.eq(id))
+				.set(SYS_USER.STATUS, UserStatusEnum.DISABLE.getValue())
+				.update();
 		if (!updateFlag) {
 			throw new BusinessException("停用失败");
 		}
@@ -195,9 +198,9 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 	@Override
 	public Boolean enable(String id) {
 		return UpdateChain.of(mapper)
-			.where(SYS_USER.ID.eq(id))
-			.set(SYS_USER.STATUS, UserStatusEnum.ENABLED.getValue())
-			.update();
+				.where(SYS_USER.ID.eq(id))
+				.set(SYS_USER.STATUS, UserStatusEnum.ENABLED.getValue())
+				.update();
 	}
 
 	@Override
@@ -230,13 +233,13 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 	@Override
 	public Page<SysUserResponse> page(Paging page, SysUserRequest request) {
 		QueryWrapper queryWrapper = new QueryWrapper().select(SYS_USER.DEFAULT_COLUMNS)
-			.where(SYS_USER.USERNAME.like(request.getUsername(), StringUtil::isNotBlank))
-			.and(SYS_USER.REAL_NAME.like(request.getRealName(), StringUtil::isNotBlank))
-			.and(SYS_USER.GENDER.eq(request.getGender()))
-			.and(SYS_USER.EMAIL.like(request.getEmail(), StringUtil::isNotBlank))
-			.and(SYS_USER.MOBILE.like(request.getMobile(), StringUtil::isNotBlank))
-			.and(SYS_USER.STATUS.eq(request.getStatus()))
-			.orderBy(SYS_USER.CREATE_TIME.asc());
+				.where(SYS_USER.USERNAME.like(request.getUsername(), StringUtil::isNotBlank))
+				.and(SYS_USER.REAL_NAME.like(request.getRealName(), StringUtil::isNotBlank))
+				.and(SYS_USER.GENDER.eq(request.getGender()))
+				.and(SYS_USER.EMAIL.like(request.getEmail(), StringUtil::isNotBlank))
+				.and(SYS_USER.MOBILE.like(request.getMobile(), StringUtil::isNotBlank))
+				.and(SYS_USER.STATUS.eq(request.getStatus()))
+				.orderBy(SYS_USER.CREATE_TIME.asc());
 		Page<SysUserResponse> respPage = mapper.paginateAs(Page.of(page.getPageNum(), page.getPageSize()), queryWrapper,
 				SysUserResponse.class);
 		// 获取用户角色
@@ -256,13 +259,13 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 	private void getUserRole(List<SysUserResponse> respList) {
 		List<Long> userIdList = respList.stream().map(SysUserResponse::getId).toList();
 		QueryWrapper queryWrapper = new QueryWrapper().select(SYS_ROLE_USER.USER_ID.as("userId"), SYS_ROLE.REMARK)
-			.from(SYS_ROLE)
-			.leftJoin(SYS_ROLE_USER)
-			.on(SYS_ROLE_USER.ROLE_ID.eq(SYS_ROLE.ID))
-			.where(SYS_ROLE_USER.USER_ID.in(userIdList));
+				.from(SYS_ROLE)
+				.leftJoin(SYS_ROLE_USER)
+				.on(SYS_ROLE_USER.ROLE_ID.eq(SYS_ROLE.ID))
+				.where(SYS_ROLE_USER.USER_ID.in(userIdList));
 		Map<Long, List<String>> userRoleMap = roleUserMapper.selectListByQueryAs(queryWrapper, SysUserRoleBo.class)
-			.stream()
-			.collect(Collectors.toMap(SysUserRoleBo::getUserId, SysUserRoleBo::getRemark));
+				.stream()
+				.collect(Collectors.toMap(SysUserRoleBo::getUserId, SysUserRoleBo::getRemark));
 		respList.forEach(item -> {
 			if (userRoleMap.containsKey(item.getId())) {
 				item.setRoles(userRoleMap.get(item.getId()));
@@ -301,9 +304,9 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 			}
 			return "密码修改成功";
 		} catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
+			throw new RuntimeException(e);
+		}
+	}
 
 	@Override
 	public SysUSerManage setSecurityQuestion(SysUSerManage request) {
@@ -390,7 +393,8 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 			throw new BusinessException("文件不能为空");
 		}
 		// 修改为 D:/IT/ITCase/Vue/WS/lanqiao-oj/user-avatars/ 目录
-		String uploadDir = "D:/IT/ITCase/Vue/WS/lanqiao-oj/oj-sys/src/main/resources/user-avatars/";
+		File file1 = new File("user-avatars");
+		String uploadDir = file1.getAbsolutePath();
 		File dir = new File(uploadDir);
 		if (!dir.exists()) {
 			dir.mkdirs();

@@ -1,38 +1,25 @@
 package com.zrx.service.impl;
 
 import cn.hutool.json.JSONUtil;
-import com.google.common.collect.Lists;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
-import com.mybatisflex.core.util.StringUtil;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.zrx.codesandbox.model.JudgeInfo;
 import com.zrx.enums.ProblemJudgeResultEnum;
 import com.zrx.enums.ProblemSubmitStatusEnum;
 import com.zrx.exception.BusinessException;
 import com.zrx.execudeCode.JudgeService;
-import com.zrx.mapper.OjPostMapper;
 import com.zrx.mapper.OjProblemMapper;
 import com.zrx.mapper.OjProblemSubmitMapper;
-import com.zrx.mapstruct.ProblemSubmitConverter;
 import com.zrx.model.common.Paging;
-import com.zrx.model.dto.problemSubmit.OjProblemSubmitQueryRequest;
 import com.zrx.model.dto.problemSubmit.OjProblemSubmitVo;
 import com.zrx.model.dto.problemSubmit.ProblemSubmitAddRequest;
-import com.zrx.model.entity.OjPost;
 import com.zrx.model.entity.OjProblem;
 import com.zrx.model.entity.OjProblemSubmit;
-import com.zrx.model.vo.OjPostVo;
-import com.zrx.model.vo.OjProblemPageVo;
-import com.zrx.security.utils.SecurityHelper;
 import com.zrx.service.OjProblemSubmitService;
 import com.zrx.sys.model.entity.SysUser;
 import jakarta.annotation.Resource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -80,19 +67,12 @@ public class OjProblemSubmitServiceImpl extends ServiceImpl<OjProblemSubmitMappe
 		ojProblemMapper.update(ojProblem);
 
 		Long submitId = submit.getId();
-		// 异步
-		CompletableFuture.runAsync(() -> {
-			try {
-				judgeService.doJudge(submitId);
-			} catch (Exception e) {
-				log.error("判题失败，提交ID: {}", submitId, e);
-				// 可能需要更新提交记录的状态为失败
-				OjProblemSubmit updatedSubmit = new OjProblemSubmit();
-				updatedSubmit.setId(submitId);
-				updatedSubmit.setStatus(ProblemSubmitStatusEnum.Completed.getKey()); // 设置状态
-				ojProblemSubmitMapper.update(updatedSubmit);
-			}
-		});
+		try {
+			judgeService.doJudge(submitId);
+		} catch (Exception e) {
+			log.error("判题失败，提交ID: {}", e);
+			// 可能需要更新提交记录的状态为失败
+		}
 		return submitId;
 	}
 
@@ -117,12 +97,6 @@ public class OjProblemSubmitServiceImpl extends ServiceImpl<OjProblemSubmitMappe
 		ojProblemSubmitVo.setOutput(ojProblemSubmit.getOutput()); // 设置输出的结果集
 
 		JudgeInfo judgeInfo = JSONUtil.toBean(ojProblemSubmit.getJudgeInfo(), JudgeInfo.class);
-		// 模拟的数据
-		JudgeInfo judgeInfo1 = new JudgeInfo();
-		judgeInfo1.setMessage("23");
-		judgeInfo1.setMemory(40l);
-		judgeInfo1.setTime(20l);
-
 		ojProblemSubmitVo.setJudgeInfo(judgeInfo); // 提交的信息
 		ojProblemSubmitVo.setStatus(String.valueOf(ojProblemSubmit.getStatus())); // 设置当前状态
 		ojProblemSubmitVo.setQuestionId(String.valueOf(ojProblemSubmit.getQuestionId())); // 设置题目id

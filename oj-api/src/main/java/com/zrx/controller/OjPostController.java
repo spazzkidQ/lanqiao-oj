@@ -39,9 +39,14 @@ public class OjPostController {
         return Result.success(ojPostService.pageSelfOrPage(page,req));
     }
 
+    @PostMapping("/pageSelfBySelfId")
+    public Result<Page<OjPostVo>> pageSelfBySelfId(Paging page,@RequestBody OjPostQueryRequest req){
+        return Result.success(ojPostService.pageSelfBySelfId(page,req));
+    }
+
     //编辑功能,根据id进行查询修改
     @GetMapping("/getInfo/{id}")
-    public Result<OjPostVo> getInfo(@PathVariable String id) {;
+    public Result<OjPostVo> getInfo(@PathVariable String id) {
         return Result.success(ojPostService.getInfoById(id));
     }
 

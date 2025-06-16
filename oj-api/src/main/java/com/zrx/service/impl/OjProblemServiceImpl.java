@@ -10,6 +10,8 @@ import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.zrx.codesandbox.model.JudgeInfo;
 import com.zrx.enums.ProblemDifficultyEnum;
+import com.zrx.enums.ProblemJudgeResultEnum;
+import com.zrx.enums.ProblemSubmitStatusEnum;
 import com.zrx.exception.BusinessException;
 import com.zrx.mapper.OjProblemMapper;
 import com.zrx.mapper.OjProblemSubmitMapper;
@@ -165,7 +167,7 @@ public class OjProblemServiceImpl extends ServiceImpl<OjProblemMapper, OjProblem
 
         // 添加标题筛选条件
         if (StrUtil.isNotBlank(req.getTitle())) {
-            queryWrapper.and("title like ?", "%" + req.getTitle() + "%");
+            queryWrapper.and("LOWER(title) like LOWER(?)", "%" + req.getTitle() + "%");
         }
 
         // 添加难度筛选条件
@@ -358,22 +360,20 @@ public class OjProblemServiceImpl extends ServiceImpl<OjProblemMapper, OjProblem
         QueryWrapper queryWrapper = new QueryWrapper();
         queryWrapper.select(OJ_PROBLEM_SUBMIT.ALL_COLUMNS)
                 .where(OJ_PROBLEM_SUBMIT.USER_ID.eq(user.getId()))
-                .and(OJ_PROBLEM_SUBMIT.CODE_STATUS.eq(3));
+                .and(OJ_PROBLEM_SUBMIT.CODE_STATUS.eq(ProblemJudgeResultEnum.ACCEPTED.getKey()))
+                .and(OJ_PROBLEM_SUBMIT.STATUS.eq(ProblemSubmitStatusEnum.Judging.getKey()))
+                .and(OJ_PROBLEM_SUBMIT.JUDGE_INFO.isNotNull());
         // 查询出当前用户提交的题目的所有信息
 
         Set<Long> mySet = new HashSet<>();
         // 查询出的所有提交的题目信息
         List<OjProblemSubmit> ojProblemSubmits = problemSubmitMapper.selectListByQuery(queryWrapper);
-
         // 去重
         List<OjProblemSubmit> collect1 = ojProblemSubmits.stream().filter(sub -> mySet.add(sub.getQuestionId())).collect(Collectors.toList());
 
         List<OjProblemPageVo> myList = collect1.stream().map(sub -> {
-            // 创建新的查询
-            QueryWrapper newQuery = new QueryWrapper();
-            newQuery.select(OJ_PROBLEM.ALL_COLUMNS).where(OJ_PROBLEM.ID.ge(sub.getQuestionId()));
-            OjProblem ojProblem = mapper.selectOneByQuery(newQuery);
-
+            Long QuestionId = sub.getQuestionId();
+            OjProblem ojProblem = mapper.selectOneById(QuestionId);
             // 创建返回实例
             if (ojProblem == null) {
                 return null;
@@ -391,38 +391,6 @@ public class OjProblemServiceImpl extends ServiceImpl<OjProblemMapper, OjProblem
         }).collect(Collectors.toList());
 
         Page<OjProblemSubmit> paginate = problemSubmitMapper.paginate(Page.of(page.getPageNum(), page.getPageSize()), queryWrapper);
-
-       /*  // 遍历
-        List<OjProblemPageVo> collect = paginate.getRecords().stream().map(sub -> {
-            // 创建新的查询
-            QueryWrapper newQuery = new QueryWrapper();
-            newQuery.select(OJ_PROBLEM.ALL_COLUMNS).where(OJ_PROBLEM.ID.ge(sub.getQuestionId()));
-            OjProblem ojProblem = mapper.selectOneByQuery(newQuery);
-
-            // 创建返回实例
-            if (ojProblem == null) {
-                return null;
-            }
-            OjProblemPageVo vo = new OjProblemPageVo();
-            vo.setId(ojProblem.getId());
-            vo.setSubmitId(sub.getId());
-            vo.setTitle(ojProblem.getTitle());
-            vo.setContent(ojProblem.getContent());
-            vo.setTags(Collections.singletonList(ojProblem.getTags().replaceAll("[\\[\\]\"]", " "))); // 设置标签
-            vo.setSubmitNum(ojProblem.getSubmitNum());
-            vo.setAcceptedNum(ojProblem.getAcceptedNum());
-            vo.setDifficulty(setDifficulty(ojProblem.getDifficulty()));
-            return vo;
-        }).collect(Collectors.toList());
-
-
-        // 如果当前页没有有效数据，尝试查询后续的页面
-        if (collect.isEmpty() && paginate.getPageNumber() < paginate.getTotalPage()) {
-            Paging paging = new Paging();
-            paging.setPageNum(page.getPageNum() + 1);
-            paging.setPageSize(page.getPageSize());
-            return getSubProblemByUserId(paging);
-        } */
         Page<OjProblemPageVo> resultPage = new Page<>();
         resultPage.setPageNumber(paginate.getPageNumber());
         resultPage.setPageSize(paginate.getPageSize());
@@ -445,6 +413,7 @@ public class OjProblemServiceImpl extends ServiceImpl<OjProblemMapper, OjProblem
         if(ojProblemSubmit == null) throw new BusinessException("当前题目不存在");
         // 根据题目的id 查询出题目的信息
         OjProblem ojProblem = mapper.selectOneById(ojProblemSubmit.getQuestionId());
+        if(ojProblem == null) throw new BusinessException("当前题目不存在");
         // 创建实例
         OjProblemSubmitVo vo = new OjProblemSubmitVo();
         vo.setId(ojProblemSubmit.getId());

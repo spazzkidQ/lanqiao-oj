@@ -40,7 +40,7 @@ public class SysUserController {
 
 	@Resource
 	private SysUserService sysUserService;
-	
+
 	@Resource
 	private EmailUtil emailUtil;
 
@@ -125,7 +125,7 @@ public class SysUserController {
 	@Operation(summary = "分页查询")
 	@SaCheckRole(value = { AuthConst.SUPER_ADMIN, AuthConst.ADMIN }, mode = SaMode.OR)
 	public Result<Page<SysUserResponse>> page(@Parameter(description = "分页条件") Paging page,
-			@Parameter(description = "查询条件") SysUserRequest request) {
+											  @Parameter(description = "查询条件") SysUserRequest request) {
 		return Result.success(sysUserService.page(page, request));
 	}
 
@@ -181,8 +181,8 @@ public class SysUserController {
 		}
 	}
 	/*
-	* 查看密保
-	* */
+	 * 查看密保
+	 * */
 	@PostMapping("/viewThePassword")
 	@Operation(summary = "查看密保")
 	public Result<String> viewThePassword(@RequestBody SysUSerManage request) {
@@ -196,13 +196,13 @@ public class SysUserController {
 		}
 	}
 	/*
-	* 给手机号发送短信
-	* */
+	 * 给手机号发送短信
+	 * */
 	@PostMapping("/sendMobileCode")
 	@Operation(summary = "发送手机验证码")
 	public Result<String> sendMobileCode(@RequestBody Map<String, String> payload) {
 		String userId = payload.get("userId");
-			String mobile = payload.get("mobile");
+		String mobile = payload.get("mobile");
 		if (userId == null || mobile == null) {
 			return Result.fail("参数不完整");
 		}

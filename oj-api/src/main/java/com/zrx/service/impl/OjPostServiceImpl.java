@@ -83,12 +83,12 @@ public class OjPostServiceImpl extends ServiceImpl<OjPostMapper, OjPost> impleme
         queryWrapper.select(OJ_POST.ALL_COLUMNS) // 查询OJ_post表中所有字段
                 .where(OJ_POST.TITLE.like(title))
                 .and(OJ_POST.ZONE.like(zone))
-//                .and(OJ_POST.CREATOR.eq(user.getId())) // 创建者的id 必须与用户的id一致
-                .orderBy(OJ_POST.VIEW_NUM.desc()); // 根据观看数降序排序
+                .orderBy(OJ_POST.CREATE_TIME.desc()); // 根据观看数降序排序
+
         // 使用Hutool 的工具类的判断标签是否为空，为其添加模糊查询条件
         if (CollUtil.isNotEmpty(tags)) {
             for (String tag : tags) {
-                queryWrapper.and(OJ_POST.TAGS.like("\"" + tag + "\""));
+                queryWrapper.and(OJ_POST.TAGS.like(tag));
             }
         }
 
@@ -131,7 +131,6 @@ public class OjPostServiceImpl extends ServiceImpl<OjPostMapper, OjPost> impleme
         resultPage.setTotalPage(ojPostPage.getTotalPage());// 查询出的总页数
         resultPage.setTotalRow(ojPostPage.getTotalRow());// 查询出的总行数
         resultPage.setRecords(collect);// 结果集
-        System.err.println(collect);
         return resultPage;
     }
 
@@ -220,7 +219,7 @@ public class OjPostServiceImpl extends ServiceImpl<OjPostMapper, OjPost> impleme
     //帖子首页  屈  分页条件查询
     @Override
     public Page<OjPostVo> getList(Paging page, OjPostQueryRequest req, Boolean selfFlag) {
-        // 校验前端传递的分类数据
+   /*      // 校验前端传递的分类数据
         if (!StringUtils.isBlank(req.getZone()) && !PostZoneEnums.isValid(req.getZone())) {
 
             // req.getZone() != null ;  // Zone("")
@@ -245,11 +244,11 @@ public class OjPostServiceImpl extends ServiceImpl<OjPostMapper, OjPost> impleme
                 OjPost::getCreator,   // 关联用户头像
                 OjPost::getCreateTime
 
-        );
+        ).orderBy(OjPost::getCreateTime).desc();
 
         // 区域查询条件——标签和分区是链接在一起的，不可以单独实现
         if (StringUtils.isNotBlank(req.getZone())) {
-            queryWrapper.eq(OjPost::getZone, req.getZone());
+            queryWrapper.like(OjPost::getZone, req.getZone());
         }
 
         // 标签查询条件
@@ -264,7 +263,58 @@ public class OjPostServiceImpl extends ServiceImpl<OjPostMapper, OjPost> impleme
         Page<OjPostVo> voPage = postConverter.toVoPage(paginate);
         postUtil.setPostAuthor(voPage.getRecords());
         postUtil.setPostZoneName(voPage.getRecords());
-        return voPage;
+        return voPage; */
+        List<String> tags = req.getTags();
+        // 创建QueryWrapper
+        QueryWrapper queryWrapper = new QueryWrapper();
+        // 根据条件查询
+        queryWrapper.select(OJ_POST.ALL_COLUMNS) // 查询OJ_post表中所有字段
+                .where(OJ_POST.TITLE.like(req.getTitle()))
+                .and(OJ_POST.ZONE.like(req.getZone()))
+                .orderBy(OJ_POST.CREATE_TIME.desc()); // 根据观看数降序排序
+        // 使用Hutool 的工具类的判断标签是否为空，为其添加模糊查询条件
+        if (CollUtil.isNotEmpty(tags)) {
+            for (String tag : tags) {
+                queryWrapper.and(OJ_POST.TAGS.like("\"" + tag + "\""));
+            }
+        }
+
+        // 获得分页的数据
+        Page<OjPost> ojPostPage = mapper.paginate(Page.of(page.getPageNum(),page.getPageSize()),queryWrapper);
+
+        // 将查询出的数据 转换为VO对象
+        List<OjPostVo> collect = ojPostPage.getRecords().stream().map(post -> {
+            SysUser user = sysUserMapper.selectOneById(post.getCreator());
+            OjPostVo ojPostVo = new OjPostVo();
+            ojPostVo.setThumbNum(post.getThumbNum()); // 点赞数
+            ojPostVo.setFavourNum(post.getFavourNum()); // 收藏数
+            ojPostVo.setTitle(post.getTitle()); // 标题
+            ojPostVo.setCreateTime(post.getCreateTime()); // 创建时间
+            ojPostVo.setId(post.getId()); // 题目id
+            ojPostVo.setContent(post.getContent()); // 内容
+            ojPostVo.setAvatar(user.getAvatar()); // 用户头像
+            ojPostVo.setCreatorName(user.getNickName()); // 用户名
+            ojPostVo.setCreator(user.getId()); // 用户 id
+            ojPostVo.setIntroduce(user.getIntroduce()); // 用户的个人简介
+            // 设置标签的显示形式
+            String tags1 = post.getTags();
+            String plainTags = tags1.replaceAll("[\\[\\]\"]", "");// 移除[]和,
+            ojPostVo.setTags(Collections.singletonList(plainTags));// 标签
+            ojPostVo.setZone(post.getZone());
+            // 使用分区的枚举来查询对应的中文信息
+            ojPostVo.setZoneName(PostZoneEnums.getTextByValue(post.getZone())); // 分区
+            ojPostVo.setViewNum(post.getViewNum()); // 观看数
+            return ojPostVo;
+        }).collect(Collectors.toList());
+
+        // 创建返回的Page数据
+        Page<OjPostVo> resultPage = new Page<>();
+        resultPage.setPageNumber(ojPostPage.getPageNumber());
+        resultPage.setPageSize(ojPostPage.getPageSize());
+        resultPage.setTotalPage(ojPostPage.getTotalPage());
+        resultPage.setTotalRow(ojPostPage.getTotalRow());
+        resultPage.setRecords(collect);
+        return resultPage;
     }
 
     //帖子首页 屈  获取五个热门帖子
@@ -334,50 +384,6 @@ public class OjPostServiceImpl extends ServiceImpl<OjPostMapper, OjPost> impleme
 
 
     /**
-     * 根据帖子ID获取帖子详细信息
-     * @param id 帖子ID
-     * @return 帖子详细信息
-     */
-    //@Override
-    //public OjPostVo getInfoByIdDetail(String id) {
-    //    // 1. 根据被点击的ID查询帖子信息
-    //    OjPost post = postMapper.selectOneById(Long.parseLong(id));
-    //    if (post == null) {
-    //        throw new BusinessException("未找到该帖子");
-    //    }
-    //
-    //    // 2. 更新帖子浏览量
-    //    boolean updated = UpdateChain.of(OjPost.class)
-    //            .set(OjPost::getViewNum, post.getViewNum() + 1)
-    //            .where(OjPost::getId).eq(Long.parseLong(id))
-    //            .update();
-    //
-    //    if (updated) {
-    //        post.setViewNum(post.getViewNum() + 1);
-    //    }
-    //
-    //    // 3. 转换为VO对象
-    //    OjPostVo vo = postConverter.toVo(post);
-    //
-    //    // 4. 设置帖子作者信息
-    //    postUtil.setPostAuthor(Lists.newArrayList(vo));
-    //
-    //    // 5. 设置分区名称
-    //    setZoneName(vo);
-    //
-    //    return vo;
-    //}
-
-    /**
-     * 设置帖子的分区名称
-     * 根据分区代码获取对应的分区名称
-     * @param ojPostVo 帖子VO对象
-     */
-    //private void setZoneName(OjPostVo ojPostVo) {
-    //    ojPostVo.setZoneName(PostZoneEnums.getTextByValue(ojPostVo.getZone()));
-    //}
-
-    /**
      *  保存帖子和发送帖子
      * @param req
      * @return
@@ -391,6 +397,67 @@ public class OjPostServiceImpl extends ServiceImpl<OjPostMapper, OjPost> impleme
         ojPost.setTags(req.getTags().toString());
         if(mapper.insert(ojPost) < 0) return false;
         else return true;
+    }
+
+    @Override
+    public Page<OjPostVo> pageSelfBySelfId(Paging page, OjPostQueryRequest req) {
+        String title = req.getTitle();
+        String zone = req.getZone();
+        List<String> tags = req.getTags();
+        // 创建QueryWrapper
+        QueryWrapper queryWrapper = new QueryWrapper();
+        SysUser user = sysUserMapper.selectOneById(req.getUserId());
+        // 根据条件查询
+        queryWrapper.select(OJ_POST.ALL_COLUMNS) // 查询OJ_post表中所有字段
+                .where(OJ_POST.TITLE.like(title))
+                .and(OJ_POST.ZONE.like(zone))
+                .and(OJ_POST.CREATOR.eq(user.getId()))
+                .orderBy(OJ_POST.CREATE_TIME.desc()); // 根据观看数降序排序
+        // 使用Hutool 的工具类的判断标签是否为空，为其添加模糊查询条件
+        if (CollUtil.isNotEmpty(tags)) {
+            for (String tag : tags) {
+                queryWrapper.and(OJ_POST.TAGS.like(tag));
+            }
+        }
+
+        // 使用page获得分页的数据
+        Page<OjPost> ojPostPage = mapper.paginate(Page.of(page.getPageNum(),page.getPageSize()),queryWrapper);
+        // 将查询出的数据 转换为VO对象
+        List<OjPostVo> collect = ojPostPage.getRecords().stream().map(post -> {
+            // 创建vo对象
+            OjPostVo ojPostVo = new OjPostVo();
+            // 设置参数
+            ojPostVo.setThumbNum(post.getThumbNum()); // 点赞数
+            ojPostVo.setFavourNum(post.getFavourNum()); // 收藏数
+            ojPostVo.setTitle(post.getTitle()); // 标题
+            ojPostVo.setAvatar(user.getAvatar()); // 用户头像
+            ojPostVo.setId(post.getId());//id
+            ojPostVo.setCreateTime(post.getCreateTime()); // 创建时间
+            ojPostVo.setContent(post.getContent()); // 内容
+            ojPostVo.setCreatorName(user.getNickName()); // 用户名
+            ojPostVo.setCreator(user.getId()); // 用户 id
+            ojPostVo.setIntroduce(user.getIntroduce()); // 用户简介
+            ojPostVo.setViewNum(post.getViewNum()); // 观看数
+
+            // 设置标签的显示格式
+            String tags1 = post.getTags();
+            String plainTags = tags1.replaceAll("[\\[\\]\"]", "");// 移除[]和,
+            ojPostVo.setTags(Collections.singletonList(plainTags));// 标签
+            ojPostVo.setZone(post.getZone());
+            // 使用分区的枚举来查询出对应的中文信息
+            ojPostVo.setZoneName(PostZoneEnums.getTextByValue(post.getZone())); // 分区
+            ojPostVo.setViewNum(post.getViewNum()); // 观看数
+            return ojPostVo; // 返回
+        }).collect(Collectors.toList());
+
+        // 创建返回的Page数据
+        Page<OjPostVo> resultPage = new Page<>();
+        resultPage.setPageNumber(ojPostPage.getPageNumber());// 设置当前页数
+        resultPage.setPageSize(ojPostPage.getPageSize());//  设置当前分页的一页显示的页数
+        resultPage.setTotalPage(ojPostPage.getTotalPage());// 查询出的总页数
+        resultPage.setTotalRow(ojPostPage.getTotalRow());// 查询出的总行数
+        resultPage.setRecords(collect);// 结果集
+        return resultPage;
     }
 
 

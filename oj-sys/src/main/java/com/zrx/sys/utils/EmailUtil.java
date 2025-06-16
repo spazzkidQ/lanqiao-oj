@@ -27,4 +27,4 @@ public class EmailUtil {
         message.setFrom("302691227@qq.com");
         mailSender.send(message);
     }
-} 
+}

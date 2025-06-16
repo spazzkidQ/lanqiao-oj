@@ -6,6 +6,8 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import java.io.File;
+
 /**
  * Sa-Token 配置 打开注解式鉴权功能
  *
@@ -26,8 +28,10 @@ public class WebConfigurer implements WebMvcConfigurer {
 
 	@Override
 	public void addResourceHandlers(ResourceHandlerRegistry registry) {
+		File myfile = new File("user-avatars");
+		String absolutePath = myfile.getAbsolutePath();
 		registry.addResourceHandler("/user-avatars/**")
-				.addResourceLocations("file:D:/IT/ITCase/Vue/WS/lanqiao-oj/oj-sys/src/main/resources/user-avatars/");
+				.addResourceLocations("file:" + absolutePath);
 	}
 
 }

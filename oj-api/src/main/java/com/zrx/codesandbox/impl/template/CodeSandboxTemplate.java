@@ -66,7 +66,8 @@ public abstract class CodeSandboxTemplate implements CodeSandBox {
 
 	protected String volumnName;  // docker挂卷的名称;
 
-	protected volatile Long memory;   // 耗费内存;
+	protected volatile long memory;   // 耗费内存;
+	protected volatile long init;   // 耗费内存;
 
 
 	static {
@@ -81,7 +82,6 @@ public abstract class CodeSandboxTemplate implements CodeSandBox {
 		System.err.println(inputList);
 		String code = executeCodeRequest.getCode();   // 用户代码实现;
 		File userCodeFile = saveCodeFile(code);  // 用户代码西写到我们下级传入进来的文件里面;
-
 		ExecuteMessage compileExecuteMessage = null;   // 编译执行消息
 		List<ExecuteMessage> runExecuteMessageList = null;   // 执行消息列表运行
 		try {
@@ -91,11 +91,11 @@ public abstract class CodeSandboxTemplate implements CodeSandBox {
 			runContainer();   // 运行我们的容器;
 			StatsCmd statsCmd = calculateMemory();   // 计算使用前的内存大小;
 			while (memory < 0) ;   // 小于0的话表示我们上面的calculateMemory()方法根本就没有执行完毕;
+			init = memory;
 			runExecuteMessageList = runFile(inputList);
 			stopContainer(); // 停止我们的容器;
 			removeContainer(statsCmd);   // 删除我们的容器;
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			return getErrorResponse(e);
 		}
 
@@ -107,6 +107,8 @@ public abstract class CodeSandboxTemplate implements CodeSandBox {
 			log.error("delete file error,userCodeFilePath={}", userCodeFile.getAbsolutePath());
 		}
 		System.err.println(executeCodeResponse);
+		while (init == memory) ;
+		executeCodeResponse.getJudgeInfo().setMemory(Math.abs(memory - init) / 8/1024);
 		return executeCodeResponse;
 	}
 
@@ -119,7 +121,7 @@ public abstract class CodeSandboxTemplate implements CodeSandBox {
 				// 禁用TLS验证（测试环境）
 				.withDockerTlsVerify(false)
 				.build();
-        DockerHttpClient httpClient = new ApacheDockerHttpClient.Builder()
+		DockerHttpClient httpClient = new ApacheDockerHttpClient.Builder()
 				.dockerHost(config.getDockerHost())   // docker的主机地址;
 				.sslConfig(config.getSSLConfig())
 				.build();
@@ -131,8 +133,8 @@ public abstract class CodeSandboxTemplate implements CodeSandBox {
 
 
 	/*
-	* @Param 创建docker的容器;
-	* */
+	 * @Param 创建docker的容器;
+	 * */
 //	public void createContainer() {
 //		CreateContainerCmd containerCmd = dockerClient.createContainerCmd(ImageName);  // 指定我们镜像的名称;
 //		HostConfig hostConfig = new HostConfig();
@@ -156,7 +158,7 @@ public abstract class CodeSandboxTemplate implements CodeSandBox {
 //			.withAttachStdin(true)  // 允许标准输入（如需交互）
 //			.withAttachStdout(true)  // 捕获标准输出流
 //			.withTty(true)   // 分配伪终端（支持交互式命令）
-//			.exec();   // 执行创建操作
+//			.exec();   // 执行创建操作	;
 //		String responseId = createContainerResponse.getId();
 //		containerId = responseId;
 //	}
@@ -169,6 +171,10 @@ public abstract class CodeSandboxTemplate implements CodeSandBox {
 		// 其他情况根据实际需要处理
 		return windowsPath.replace("\\", "/");
 	}
+
+
+	private long currentMemory;  // 存储当前最新的内存值
+
 	public void createContainer() {
 		try {
 			// 1. 初始化容器命令
@@ -183,11 +189,10 @@ public abstract class CodeSandboxTemplate implements CodeSandBox {
 			// 3. 设置资源限制
 			System.out.println("[3/5] 资源限制: CPU=1核, 内存=100MB, Swap=禁用");
 			hostConfig.withCpuCount(1L)
-					.withMemorySwap(0L)
-					.withMemory(100 * 1000 * 1000L);
+					.withMemory(500 * 1000 * 1000L);
 
 			// 4. 安全与 I/O 配置
-			System.out.println("[4/5] 安全配置: 网络禁用, 根文件系统只读");
+			System.out.println("[4/5] 安全配                    .withMemorySwap(0L)\n置: 网络禁用, 根文件系统只读");
 			System.out.println("      I/O 配置: 启用输入/输出捕获, 分配伪终端");
 			CreateContainerResponse createContainerResponse = containerCmd
 					.withHostConfig(hostConfig)
@@ -214,6 +219,7 @@ public abstract class CodeSandboxTemplate implements CodeSandBox {
 			e.printStackTrace();
 		}
 	}
+
 	public void runContainer() {
 		dockerClient.startContainerCmd(containerId).exec();
 	}
@@ -231,7 +237,7 @@ public abstract class CodeSandboxTemplate implements CodeSandBox {
 			@Override
 			public void onNext(Statistics statistics) {
 				System.out.println("内存占用：" + statistics.getMemoryStats().getUsage());
-				memory = Math.max(statistics.getMemoryStats().getUsage(), memory);
+				memory = statistics.getMemoryStats().getUsage();
 				System.err.println(memory);
 			}
 
@@ -259,8 +265,7 @@ public abstract class CodeSandboxTemplate implements CodeSandBox {
 		try {
 			Runtime.getRuntime().exec(String.format("docker stop -f %s", containerId));
 			// dockerClient.stopContainerCmd(containerId).exec();
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 	}
@@ -269,8 +274,7 @@ public abstract class CodeSandboxTemplate implements CodeSandBox {
 		try {
 			Runtime.getRuntime().exec(String.format("docker rm -f %s", containerId));
 			// dockerClient.removeContainerCmd(containerId).exec();
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 		statsCmd.close();
@@ -281,15 +285,14 @@ public abstract class CodeSandboxTemplate implements CodeSandBox {
 			// Process exec = Runtime.getRuntime().exec(String.format("docker rm -f %s",
 			// containerId));
 			dockerClient.removeContainerCmd(containerId).exec();
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 	}
 
 	/*
-	* @Param code用户提交的代码;
-	* */
+	 * @Param code用户提交的代码;
+	 * */
 	public File saveCodeFile(String code) {
 		String userDir = System.getProperty("user.dir");   // 获取当前java程序的工作目录;即项目的根目录或运行时的工作目录;
 		globalCodePathName = userDir + File.separator + GLOBAL_CODE_DIR_NAME;   //  File.separator 不同型号系统的分隔符;
@@ -308,10 +311,10 @@ public abstract class CodeSandboxTemplate implements CodeSandBox {
 	public ExecuteMessage compileFile(File userCodeFile) throws Exception {
 
 		/*
-		* @param userCodeFile.getAbsolutePath() 写入文件的绝对路径;
-		* @param userCodeParentPath 代码的父路径;
-		* @param language 编程语言;
-		* */
+		 * @param userCodeFile.getAbsolutePath() 写入文件的绝对路径;
+		 * @param userCodeParentPath 代码的父路径;
+		 * @param language 编程语言;
+		 * */
 		String compileCmd = LanguageCmdUtils.getCompileCMD(userCodeFile.getAbsolutePath(), userCodeParentPath,
 				language);   // 返回的是需要执行我们的cmd的命令;
 		if (compileCmd == null)
@@ -325,13 +328,14 @@ public abstract class CodeSandboxTemplate implements CodeSandBox {
 				throw new RuntimeException("编译错误：\n错误的原因是：" + executeMessage.getErrorMessage());
 			}
 			return executeMessage;
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			throw e;
 		}
 	}
-	public List<ExecuteMessage> runFile(List<String> inputList) throws IOException {
+
+	public List<ExecuteMessage> runFile(List<String> inputList) throws IOException, InterruptedException {
 		long startMemory = memory;
+		System.err.println("我傻逼" + memory);
 		System.out.println("开始的内存---" + memory);
 		List<ExecuteMessage> executeMessagesList = new ArrayList<>();  //存储每个输入用例的结果;
 		if (inputList == null || inputList.isEmpty()) {
@@ -352,33 +356,31 @@ public abstract class CodeSandboxTemplate implements CodeSandBox {
 				throw new RuntimeException("超时异常");
 			}
 			timeManagerThread.stop();   // 打断执行的线程;
-		}
-		else {
-				for (String inputArgs : inputList) {
-					try {
-						Runtime runtime = Runtime.getRuntime();
-						String runCmd = LanguageCmdUtils.getRunCMD(volumnName, language, containerId);
-						System.out.println(runCmd);
-						Process runProcess = runtime.exec(runCmd);
-						ExecuteMessage executeMessage = null;
-						TimeManagerThread timeManagerThread = new TimeManagerThread(TIME_OUT);
-						timeManagerThread.setProcess(runProcess);
-						timeManagerThread.start();
-						executeMessage = ProcessUtils.runCode(runProcess, inputArgs);
-						System.out.println("结束的进程-----" + memory);
-						executeMessage.setMemory(memory);
-						executeMessagesList.add(executeMessage);
-						if (timeManagerThread.IsTime_out()) {
-							stopContainer();
-							removeContainer();
-							throw new RuntimeException("超时异常");
-						}
-						timeManagerThread.stop();
+		} else {
+			for (String inputArgs : inputList) {
+				try {
+					Runtime runtime = Runtime.getRuntime();
+					String runCmd = LanguageCmdUtils.getRunCMD(volumnName, language, containerId);
+					System.out.println(runCmd);
+					Process runProcess = runtime.exec(runCmd);
+					ExecuteMessage executeMessage = null;
+					TimeManagerThread timeManagerThread = new TimeManagerThread(TIME_OUT);
+					timeManagerThread.setProcess(runProcess);
+					timeManagerThread.start();
+					executeMessage = ProcessUtils.runCode(runProcess, inputArgs);
+					System.out.println("结束的进程-----" + memory);
+					executeMessage.setMemory(memory);
+					executeMessagesList.add(executeMessage);
+					if (timeManagerThread.IsTime_out()) {
+						stopContainer();
+						removeContainer();
+						throw new RuntimeException("超时异常");
 					}
-					catch (Exception e) {
-						throw e;
-					}
+					timeManagerThread.stop();
+				} catch (Exception e) {
+					throw e;
 				}
+			}
 		}
 		return executeMessagesList;
 	}
@@ -434,12 +436,10 @@ public abstract class CodeSandboxTemplate implements CodeSandBox {
 		if (e.getMessage().contains("编译")) {
 			executeCodeResponse.setMessage(QuestionExecuteResultEnum.CompileFailure.getText());
 			executeCodeResponse.setStatus(QuestionExecuteResultEnum.CompileFailure.getValue());
-		}
-		else if (e.getMessage().contains("超时")) {
+		} else if (e.getMessage().contains("超时")) {
 			executeCodeResponse.setMessage(QuestionExecuteResultEnum.OutOfTimeException.getText());
 			executeCodeResponse.setStatus(QuestionExecuteResultEnum.OutOfTimeException.getValue());
-		}
-		else {
+		} else {
 			executeCodeResponse.setMessage(QuestionExecuteResultEnum.RunException.getText());
 			executeCodeResponse.setStatus(QuestionExecuteResultEnum.RunException.getValue());
 		}

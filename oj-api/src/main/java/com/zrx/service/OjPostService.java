@@ -58,6 +58,8 @@ public interface OjPostService extends IService<OjPost> {
     // 保存帖子
     Boolean save(OjPostAddRequest req);
 
-    //// 根据id获取帖子详情
+    Page<OjPostVo> pageSelfBySelfId(Paging page, OjPostQueryRequest req);
+
+ //// 根据id获取帖子详情
     //OjPostVo getInfoByIdDetail(String id);
 }

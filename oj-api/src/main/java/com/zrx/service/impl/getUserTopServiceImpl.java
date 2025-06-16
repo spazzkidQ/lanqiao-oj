@@ -72,7 +72,6 @@ public class getUserTopServiceImpl extends ServiceImpl<com.zrx.mapper.getUserTop
 
             // 执行查询
             UserRankingVO userRank = sysUserMapper.selectOneByQueryAs(query, UserRankingVO.class);
-
             return userRank;
         } catch (Exception e) {
             e.printStackTrace();
@@ -105,6 +104,9 @@ public class getUserTopServiceImpl extends ServiceImpl<com.zrx.mapper.getUserTop
         Integer totalUsersSum = sysUserMapper.selectOneByQueryAs(totalUsers, Integer.class);
         if (userRank != null) {
             Integer userRankSum = ojProblemSubmitMapper.selectOneByQueryAs(userRank, Integer.class);
+            if(userRankSum == null){
+                return -1;
+            }
             BigDecimal result = new BigDecimal(userRankSum - 1).divide(new BigDecimal(totalUsersSum - 1), 2, RoundingMode.DOWN);
             // 计算百分比
             return result.multiply(new BigDecimal(100)).intValue();

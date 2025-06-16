@@ -2,8 +2,10 @@ package com.zrx.execudeCode.service;
 
 import cn.hutool.json.JSONUtil;
 import com.zrx.codesandbox.CodeSandBox;
+import com.zrx.codesandbox.mannager.CodeManager;
 import com.zrx.codesandbox.model.ExecuteCodeRequest;
 import com.zrx.codesandbox.model.ExecuteCodeResponse;
+import com.zrx.codesandbox.model.JudgeInfo;
 import com.zrx.enums.ProblemJudgeResultEnum;
 import com.zrx.enums.ProblemSubmitStatusEnum;
 import com.zrx.execudeCode.CodeSandboxManager;
@@ -16,6 +18,8 @@ import com.zrx.model.entity.OjProblemSubmit;
 import com.zrx.model.judge.JudgeTask;
 import com.zrx.service.OjProblemService;
 import jakarta.annotation.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -25,13 +29,14 @@ import java.util.stream.Collectors;
 @Service
 public class JudgeServiceImpl implements JudgeService {
 
+	private static final Logger log = LoggerFactory.getLogger(JudgeServiceImpl.class);
 	@Resource
 	private OjProblemService ojProblemService;
 
 	@Resource
 	private OjProblemSubmitMapper submitMapper;
 
-	@Value("${codesandbox.type:remote}")
+	@Value("${codesandbox.type}")
 	private String type;
 
 	@Override
@@ -41,11 +46,9 @@ public class JudgeServiceImpl implements JudgeService {
 		OjProblem ojProblem = ojProblemService.getById(ojProblemSubmit.getQuestionId());  // 通过题目Id进行查询到我们的题目详情信息;
 		System.err.println(ojProblem.getJudgeCase());
 		ExecuteCodeRequest executeCodeRequest = getExecuteCodeRequest(ojProblemSubmit, ojProblem); // 输入 + 用户代码 + 语言;
-
-		CodeSandBox codeSandbox = CodeSandboxManager.instance("local");   // 获取我们判题的对象;决定判断的是本地的判题的机制还是远程的判题机制;
+		CodeSandBox codeSandbox = CodeSandboxManager.instance(type); // 获取我们判题的对象;决定判断的是本地的判题的机制还是远程的判题机制;
 		ojProblemSubmit.setStatus(ProblemSubmitStatusEnum.Waiting.getKey());  // 设置我们的状态为判题中;
 		submitMapper.update(ojProblemSubmit);  // 修改我们的数据库;
-
 
 		ExecuteCodeResponse executeCodeResponse = codeSandbox.executeCode(executeCodeRequest);   // 进行判题获取到我们的输出用例'
 
@@ -55,10 +58,15 @@ public class JudgeServiceImpl implements JudgeService {
 		// JudgeTask 包含提交的数据 + 题目信息 + 执行后信息;
 		HandleJudgeTask handleJudgeTask = new HandleJudgeTask();
 		ojProblemSubmit.setOutput(JSONUtil.toJsonStr(executeCodeResponse.getOuputList()));  // 设置我们执行出来的输出用例;
-		ojProblemSubmit.setJudgeInfo(JSONUtil.toJsonStr(executeCodeResponse.getJudgeInfo()));  // 设置我们执行出来的信息大小 + 时间 + 内存;
+		// 创建JudgeInfo
+		JudgeInfo judgeInfo = new JudgeInfo();
+		judgeInfo.setMemory(executeCodeResponse.getJudgeInfo().getMemory());
+		judgeInfo.setTime(executeCodeResponse.getJudgeInfo().getTime());
 		ojProblemSubmit = handleJudgeTask.doHandle(judgeTask);
-		boolean saveFlag = submitMapper.update(ojProblemSubmit) == 1;  // 继续修改我们的OjProblemSubmit的数据;
 		Integer codeStatus = ojProblemSubmit.getCodeStatus();
+		judgeInfo.setMessage(ProblemJudgeResultEnum.getEnum(codeStatus).getValue()); // 根据代码执行结果来获取当前信息
+		ojProblemSubmit.setJudgeInfo(JSONUtil.toJsonStr(judgeInfo));  // 设置我们执行出来的信息大小 + 时间 + 内存;
+		boolean saveFlag = submitMapper.update(ojProblemSubmit) == 1;  // 继续修改我们的OjProblemSubmit的数据;
 		if (codeStatus.equals(ProblemJudgeResultEnum.ACCEPTED.getKey())) {
 			ojProblem.setAcceptedNum(ojProblem.getAcceptedNum() == null ? 1 : ojProblem.getAcceptedNum() + 1);
 			ojProblemService.updateById(ojProblem);   // 成功数进行对应的 + 1的操作;
@@ -67,6 +75,7 @@ public class JudgeServiceImpl implements JudgeService {
 			throw new Exception("代码提交保存失败");
 		}
 	}
+
 
 	private ExecuteCodeRequest getExecuteCodeRequest(OjProblemSubmit ojProblemSubmit, OjProblem ojProblem) {
 		// 传入我们的提交的信息和题目的信息;
@@ -80,7 +89,7 @@ public class JudgeServiceImpl implements JudgeService {
 	}
 
 	private JudgeTask setJudgeTask(ExecuteCodeResponse executeCodeResponse, OjProblem ojProblem,
-			OjProblemSubmit ojProblemSubmit) {
+								   OjProblemSubmit ojProblemSubmit) {
 		JudgeTask judgeTask = new JudgeTask();
 		judgeTask.setOjProblem(ojProblem);
 		judgeTask.setOjProblemSubmit(ojProblemSubmit);
