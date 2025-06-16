@@ -6,6 +6,19 @@ server:
       cookie:
         http-only: true
 spring:
+  mail:
+    host: smtp.qq.com
+    port: 587
+    username: 302691227@qq.com
+    password: urmviitipkvhbhab
+    protocol: smtp
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
   # 默认dev环境
   profiles:
     active: dev
@@ -15,7 +28,6 @@ spring:
   mvc:
     pathmatch:
       matching-strategy: ant_path_matcher
-
 # mybatis-flex 配置
 mybatis-flex:
   mapper-locations:
@@ -57,6 +69,6 @@ knife4j:
     enable-host-text: "localhost:8101"
 
 codesandbox:
-   type: remote
+#   type: remote
   # 改为local后就是访问本地沙箱
-#  type: local
+  type: local
