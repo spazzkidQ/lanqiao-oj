@@ -8,6 +8,12 @@ public class TimeManagerThread extends Thread {
 
 	private Process process;
 
+
+
+	/*
+	* todo: 时间;
+	*
+	*  */
 	public TimeManagerThread(long time) {
 		isTimeout = false;
 		this.time = time;

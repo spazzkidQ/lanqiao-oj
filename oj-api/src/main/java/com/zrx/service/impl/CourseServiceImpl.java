@@ -11,10 +11,12 @@ import com.zrx.model.entity.Course;
 import com.zrx.security.utils.SecurityHelper;
 import com.zrx.service.CourseService;
 import com.zrx.sys.model.entity.SysUser;
+import jakarta.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,12 +24,18 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.List;
 
 @Service
 public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course>
         implements CourseService {
 
+    @Resource
+    private RedisTemplate<String, List<String>> redisTemplate;
+
     private static final Logger log = LoggerFactory.getLogger(CourseServiceImpl.class);
+    String property = System.getProperty("user.dir");
+    String uploadDir = property.replace("\\","/") + "/oj-sys/src/main/resources/user-avatars/";
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -39,6 +47,7 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course>
             throw new IllegalArgumentException("课程名称和教师不能为空");
         }
         save(course);
+        redisTemplate.delete("courseName");
         return course;
     }
 
@@ -48,6 +57,7 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course>
         if (course == null || StringUtils.isBlank(course.getId())) {
             throw new IllegalArgumentException("要更新的课程ID不能为空");
         }
+        redisTemplate.delete("courseName");
         return updateById(course, true);
     }
 
@@ -57,6 +67,7 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course>
         if (StringUtils.isBlank(courseId)) {
             throw new IllegalArgumentException("课程ID不能为空");
         }
+        redisTemplate.delete("courseName");
         return removeById(courseId);
     }
 
@@ -84,8 +95,6 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course>
             throw new RuntimeException("Error during course pagination", e);
         }
     }
-    @Value("E:/oj/lanqiao-oj/oj-sys/src/main/resources/user-avatars/")
-    private String uploadDir;
 
     @Override
     @Transactional // 开启事务，确保数据库操作的原子性

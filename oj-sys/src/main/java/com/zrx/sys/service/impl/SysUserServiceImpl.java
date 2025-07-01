@@ -64,7 +64,7 @@ import static com.zrx.sys.model.entity.table.SysUserTableDef.SYS_USER;
  */
 @Service
 @RequiredArgsConstructor
-public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> implements SysUserService {
+public class 	SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> implements SysUserService {
 
 	private final CaptchaService captchaService;
 

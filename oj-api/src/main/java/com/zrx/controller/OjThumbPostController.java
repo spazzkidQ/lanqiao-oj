@@ -72,12 +72,7 @@ public class OjThumbPostController {
      */
     @GetMapping("/get/post/{id}")
     public Result getThumbPost(@PathVariable Long id, @Parameter Paging page){
-        System.out.println(id);
-        System.out.println(page);
         Page<OjPostVo> thumbList = ojPostThumbService.findThumbList(id, page);
-        if (thumbList==null){
-            return Result.fail("当前账号无点赞帖子");
-        }
         return Result.success(thumbList);
     }
 

@@ -77,6 +77,7 @@ public class CourseReservationServiceImpl extends ServiceImpl<CourseReservationM
             wrapper.like("school", condition.getSchool());
         }
         // 获取所有符合条件的数据
+        wrapper.orderBy(CourseReservation::getCreateTime).desc();
         long totalNum = courseReservationMapper.selectCountByQuery(wrapper);
         //添加分页限制
         wrapper.limit((condition.getPageNum()-1)*condition.getPageSize(),condition.getPageSize());

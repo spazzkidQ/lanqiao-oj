@@ -412,7 +412,7 @@ public class OjPostServiceImpl extends ServiceImpl<OjPostMapper, OjPost> impleme
                 .where(OJ_POST.TITLE.like(title))
                 .and(OJ_POST.ZONE.like(zone))
                 .and(OJ_POST.CREATOR.eq(user.getId()))
-                .orderBy(OJ_POST.CREATE_TIME.desc()); // 根据观看数降序排序
+                .orderBy(OJ_POST.UPDATE_TIME.desc()); // 根据观看数降序排序
         // 使用Hutool 的工具类的判断标签是否为空，为其添加模糊查询条件
         if (CollUtil.isNotEmpty(tags)) {
             for (String tag : tags) {

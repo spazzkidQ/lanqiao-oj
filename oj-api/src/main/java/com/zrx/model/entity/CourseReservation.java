@@ -2,10 +2,13 @@ package com.zrx.model.entity;
 
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 
+import com.mybatisflex.annotation.Column;
 import com.mybatisflex.annotation.Id;
 import com.mybatisflex.annotation.KeyType;
 import com.mybatisflex.annotation.Table;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
@@ -50,4 +53,11 @@ public class CourseReservation implements Serializable {
      * 校区所在城市
      */
     private String city;
+
+    /**
+     *  预约时间
+     */
+    @Column(onInsertValue = "now()")
+    @Schema(description = "预约时间")
+    private LocalDateTime createTime;
 }

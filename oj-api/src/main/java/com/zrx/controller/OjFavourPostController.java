@@ -68,9 +68,6 @@ public class OjFavourPostController {
     @GetMapping("/get/post/{id}")
     public Result getFavourPost(@PathVariable Long id, @Parameter Paging page){
         Page<OjPostVo> favourList = ojPostFavourService.findFavourList(id, page);
-        if (favourList==null){
-            return Result.fail("当前账号无收藏帖子");
-        }
         return Result.success(favourList);
     }
 
